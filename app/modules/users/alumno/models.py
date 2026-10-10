@@ -1,0 +1,34 @@
+# app/modules/users/alumno/models.py
+from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from app.db.database import Base
+
+class Alumno(Base):
+    __tablename__ = "alumno"
+    id_alumno = Column(Integer, primary_key=True, index=True)
+    id_usuario = Column(Integer, ForeignKey("usuario.id_usuario"), unique=True)
+    dni = Column(String(8), unique=True)
+    nombres = Column(String(250), nullable=False)
+    apellidos = Column(String(250), nullable=False)
+    fecha_nacimiento = Column(Date)
+    genero = Column(String(1))
+    direccion = Column(String(300))
+    enfermedad = Column(String(150))
+    talla_polo = Column(String(5))
+    colegio_procedencia = Column(String(100))
+    id_grado_ingreso = Column(Integer, ForeignKey("grado.id_grado"), nullable=True)
+    relacion_fraternal = Column(Boolean, default=False)
+    # Valores válidos en app/modules/users/alumno/estados.py
+    estado_ingreso = Column(String(20), default='POSTULANTE')
+    motivo_rechazo = Column(Text, nullable=True)
+    # Documentos de admisión (año regular) — URLs de los archivos subidos
+    doc_dni_menor = Column(String(500), nullable=True)
+    doc_dni_apoderado = Column(String(500), nullable=True)
+    doc_fum = Column(String(500), nullable=True)            # Ficha Única de Matrícula
+    doc_certificado_estudios = Column(String(500), nullable=True)
+    # Relaciones
+    usuario = relationship("Usuario")
+    grado_ingreso = relationship("Grado")
+    familiares_rel = relationship("RelacionFamiliar", back_populates="alumno")
+    # matriculas = relationship("app.modules.enrollment.models.Matricula", back_populates="alumno") 
+    # pagos = relationship("app.modules.finance.models.Pago", back_populates="alumno")
