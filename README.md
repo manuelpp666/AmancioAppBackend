@@ -1,82 +1,37 @@
--- Idea base
-app/
-├── core/                # Seguridad (JWT), config de entorno, constantes.
-├── db/                  # Conexión a DB y base de los modelos.
-├── modules/             # Aquí vive la lógica del colegio dividida por contexto
-│   ├── auth/            # Login, registro de profes/alumnos
-│   ├── enrollment/      # Gestión de matrículas
-│   │   ├── router.py
-│   │   ├── schemas.py
-│   │   ├── service.py   # Lógica: "¿El alumno debe documentos?"
-│   │   └── models.py
-│   ├── payments/        # Pasarelas de pago, facturas, deudas
-│   │   ├── router.py
-│   │   ├── service.py   # Lógica: "Validar transacción con banco"
-│   │   └── models.py
-│   └── campus/          # Material de clases, tareas, notas
-└── main.py              # Registro de todos los módulos
+# AmancioApp Backend — aplicación móvil
 
--- Estructura v1.0
-app/
-└── modules/
-    ├── users/               <-- YA EXISTE (Expandir)
-    │   ├── usuario/         (Manejo de login y usuarios base)
-    │   ├── docente/         (Ya lo tienes)
-    │   ├── alumno/          (Nuevo)
-    │   └── familiar/        (Nuevo)
-    ├── academic/            <-- NUEVO (Todo lo académico: Grados, Cursos, Secciones)
-    ├── enrollment/          <-- NUEVO (Matrícula y Exoneraciones)
-    ├── finance/             <-- NUEVO (Pagos y Trámites)
-    ├── management/          <-- NUEVO (Notas, Asistencia, Carga Académica)
-    ├── behavior/            <-- NUEVO (Conducta y Psicología)
-    └── web/                 <-- NUEVO (Noticias y Eventos)
+API construida con FastAPI para la aplicación móvil del Campus AV. El alcance
+funcional está definido en [alcance_del_proyecto.md](./alcance_del_proyecto.md).
 
---- Resumen simple de lo que hace cada parte (Hecho por Gemini)
-1. El Router (router.py) - El Mesero
-El router es el que recibe al cliente (el frontend). Su única misión es:
+## Funcionalidades móviles
 
-Recibir la orden (el request).
+- Inicio de sesión, control por rol y cambio de contraseña en el primer ingreso.
+- Consulta de perfil, matrícula del año activo (sin información económica),
+  cursos, horarios, notas, libretas y asistencia.
+- Registro y consulta de reportes de conducta, catálogo de faltas y notas de
+  conducta por bimestre.
+- Solicitud y seguimiento de citas de psicología.
+- Materiales, clases virtuales, tareas, entregas y mensajería interna.
+- Recursos de notificación y archivos necesarios para las funciones del campus.
 
-Validar que los datos básicos estén ahí (usando los Schemas).
+La API publica únicamente las rutas móviles seleccionadas en `main.py`. No
+publica las operaciones financieras, administrativas ni de contenido web
+excluidas del alcance. Los modelos y servicios compartidos con las funciones
+móviles se conservan; no se eliminan tablas ni datos de la base de datos.
+Los archivos públicos se limitan a `/media/materiales_clase`,
+`/media/recursos_tareas` y `/media/entregas_tareas`.
 
-Pasarle el pedido a la cocina y entregar la respuesta al cliente.
+## Ejecución local
 
-No cocina. Si hay un cálculo de impuestos en el pago, el mesero no lo hace.
+1. Crear y activar un entorno virtual de Python 3.12.
+2. Instalar dependencias con `pip install -r requirements.txt`.
+3. Configurar las variables necesarias tomando `.env.example` como referencia.
+4. Iniciar el servidor:
 
-2. El Service (service.py) - El Chef (Lógica de Negocio)
-Aquí es donde ocurre la "magia" y es la parte más importante para tu colegio.
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload
+```
 
-Si un alumno se matricula, el service verifica: ¿Hay cupo? ¿Pagó la reserva? ¿Tiene los documentos completos?
-
-Es código Python puro. No sabe si los datos vienen de una web o de una app móvil; él solo ejecuta las reglas del colegio.
-
-3. El Schema (schemas.py) - El Menú / Contrato
-Son modelos de Pydantic. Definen exactamente qué datos puede enviar o recibir el usuario.
-
-Ejemplo: Un schema de "Pago" dice que el monto debe ser un número positivo y la moneda debe ser "USD" o "PEN". Si envían texto en el precio, FastAPI lo rebota automáticamente.
-
-4. El Model (models.py) - La Alacena (Base de Datos)
-Es la representación de tus tablas en la base de datos (usando SQLAlchemy).
-
-Define que la tabla alumnos tiene una columna id, nombre y correo.
-
-
---- Instalación----
-1. pip install fastapi "uvicorn[standard]" sqlalchemy pymysql cryptography alembic python-dotenv pydantic-settings python-multipart
-
-pip install "pydantic[email]"
-
-pip install "passlib[bcrypt]"
-
-
-1.
-pip install -U python-multipart google-genai langchain langchain-pinecone pinecone-client pypdf langchain-huggingface sentence-transformers
-
-2. pip install langchain-community
-
-
-3. pip install python-docx
-
-4. pip install docx2txt
-
-5. pip install python-jose[cryptography]
+El servidor necesita conexión con la base de datos configurada en el entorno.
+La documentación interactiva y el esquema OpenAPI dependen de la configuración
+del entorno.

@@ -74,3 +74,10 @@ class MatriculaResponse(MatriculaBase):
     # --------------------------------------------------------------
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EstadoMatriculaResponse(BaseModel):
+    id_anio_escolar: str
+    estado: str
+    grado: Optional[str] = None
+    seccion: Optional[str] = None

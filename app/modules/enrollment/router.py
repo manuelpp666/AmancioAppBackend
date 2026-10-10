@@ -20,6 +20,45 @@ from app.modules.finance import models as finance_models
 # CAMBIO CLAVE: Prefijo "/enrollment" para coincidir con el frontend
 router = APIRouter(prefix="/enrollment", tags=["Matrícula"])
 
+
+@router.get(
+    "/estado-actual/{id_usuario}",
+    response_model=schemas.EstadoMatriculaResponse,
+)
+def obtener_estado_matricula_actual(
+    id_usuario: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user.get("id") != id_usuario and current_user.get("rol") != "ADMIN":
+        raise HTTPException(status_code=403, detail="No puedes consultar la matrícula de otro usuario")
+
+    alumno = db.query(alumno_models.Alumno).filter(
+        alumno_models.Alumno.id_usuario == id_usuario
+    ).first()
+    if not alumno:
+        raise HTTPException(status_code=404, detail="Alumno no encontrado")
+
+    anio = db.query(academic_models.AnioEscolar).filter(
+        academic_models.AnioEscolar.activo.is_(True),
+        academic_models.AnioEscolar.tipo == "REGULAR",
+    ).order_by(academic_models.AnioEscolar.fecha_inicio.desc()).first()
+    if not anio:
+        raise HTTPException(status_code=404, detail="No hay un año escolar activo")
+
+    matricula = db.query(models.Matricula).filter(
+        models.Matricula.id_alumno == alumno.id_alumno,
+        models.Matricula.id_anio_escolar == anio.id_anio_escolar,
+    ).first()
+
+    return schemas.EstadoMatriculaResponse(
+        id_anio_escolar=anio.id_anio_escolar,
+        estado=matricula.estado if matricula else "SIN_MATRICULA",
+        grado=matricula.grado.nombre if matricula and matricula.grado else None,
+        seccion=matricula.seccion.nombre if matricula and matricula.seccion else None,
+    )
+
+
 # --- CREAR MATRÍCULA ---
 @router.post("/matriculas/", response_model=schemas.MatriculaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles("ADMIN")), Depends(requiere_permiso("academico", "estudiantes", "editar"))])
 def crear_matricula(matricula: schemas.MatriculaCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):

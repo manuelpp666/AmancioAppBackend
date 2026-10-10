@@ -49,7 +49,8 @@ for _flujo in (sys.stdout, sys.stderr):
     if hasattr(_flujo, "reconfigure"):
         _flujo.reconfigure(encoding="utf-8", errors="replace")
 
-from fastapi import FastAPI, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -59,30 +60,14 @@ from sqlalchemy import text  # Para escribir SQL puro
 from app.db.database import get_db # Ajusta la ruta según tu carpeta
 from app.modules.users import router as usuario_router 
 from app.modules.users.alumno import router as alumno_router
-from app.modules.users.familiar import router as familiar_router
-from app.modules.users.docente import router as docente_router
-from app.modules.chatbot import router as chatbot_router
-from app.modules.seguridad import router as seguridad_router
-# Resto de módulos
 from app.modules.perfil import router as perfil_router
 from app.modules.academic import router as academic_router
-from app.modules.academic import router_notas as academic_notas_router
-from app.modules.academic import router_exoneracion as academic_exoneracion_router
 from app.modules.academic import router_libreta as academic_libreta_router
 from app.modules.enrollment import router as enrollment_router
-from app.modules.finance import router as finance_router
-from app.modules.finance import router_crep as finance_crep_router
 from app.modules.management import router as management_router
 from app.modules.virtual import router as virtual_router
 from app.modules.behavior import router as behavior_router
-from app.modules.web import router as web_router
-from app.modules.admision import router as admision_router
 from app.modules.horario import router as horario_router
-from app.modules.pagina_principal import router as pagina_web_router
-from app.modules.personal import router as personal_router
-from app.modules.verano import router as verano_router
-from app.modules.mantenimiento import router as mantenimiento_router
-from app.modules.multimedia import router as multimedia_router
 from app.core.util import media as media_util
 from app.core.socket_manager import socket_manager
 from app.core import socket_manager as socket_manager_mod
@@ -193,35 +178,126 @@ print(f"🚀 Servidor de archivos configurado en: {MEDIA_PATH}")
 if not os.path.exists(MEDIA_PATH):
     os.makedirs(MEDIA_PATH, exist_ok=True)
 
-# 3. Montamos la carpeta
-app.mount("/media", StaticFiles(directory=MEDIA_PATH), name="media")
+# Solo se publican archivos usados por materiales, recursos y entregas del aula
+# virtual. El resto del directorio puede contener archivos de módulos web.
+for categoria_media in ("materiales_clase", "recursos_tareas", "entregas_tareas"):
+    ruta_categoria = os.path.join(MEDIA_PATH, categoria_media)
+    os.makedirs(ruta_categoria, exist_ok=True)
+    app.mount(
+        f"/media/{categoria_media}",
+        StaticFiles(directory=ruta_categoria),
+        name=f"media-{categoria_media}",
+    )
 
-# Incluir Rutas
-app.include_router(usuario_router.router)
-app.include_router(horario_router.router)
-app.include_router(alumno_router.router)
-app.include_router(familiar_router.router)
-app.include_router(docente_router.router)
-app.include_router(perfil_router.router)
-app.include_router(academic_router.router)
-app.include_router(academic_notas_router.router)
-app.include_router(academic_exoneracion_router.router)
-app.include_router(academic_libreta_router.router)
-app.include_router(enrollment_router.router)
-app.include_router(finance_router.router)
-app.include_router(finance_crep_router.router)
-app.include_router(management_router.router)
+# Publicar solo operaciones que forman parte del alcance móvil. Los modelos y
+# servicios compartidos se conservan para que las rutas incluidas sigan
+# funcionando, pero las rutas web y administrativas no quedan expuestas.
+def incluir_rutas_moviles(
+    router: APIRouter,
+    rutas_permitidas: set[tuple[str, str]],
+) -> None:
+    router_filtrado = APIRouter()
+    router_filtrado.routes.extend(
+        ruta
+        for ruta in router.routes
+        if isinstance(ruta, APIRoute)
+        and any(
+            (ruta.path, metodo) in rutas_permitidas
+            for metodo in ruta.methods or ()
+        )
+    )
+    app.include_router(router_filtrado)
+
+
+incluir_rutas_moviles(
+    usuario_router.router,
+    {
+        ("/usuarios/login", "POST"),
+        ("/usuarios/mis-permisos", "GET"),
+        ("/usuarios/logout", "POST"),
+    },
+)
+incluir_rutas_moviles(
+    alumno_router.router,
+    {("/alumnos/alumnos/usuario/{id_usuario}", "GET")},
+)
+incluir_rutas_moviles(
+    perfil_router.router,
+    {
+        ("/perfil/mi-perfil/{username}", "GET"),
+        ("/perfil/contacto/{username}", "PATCH"),
+        ("/perfil/auth/change-password", "POST"),
+        ("/perfil/auth/primer-ingreso", "GET"),
+    },
+)
+
+rutas_academicas_moviles = {
+    (ruta.path, "GET")
+    for ruta in academic_router.router.routes
+    if isinstance(ruta, APIRoute)
+    and "GET" in (ruta.methods or ())
+    and ruta.path != "/academic/cursos-verano/"
+}
+incluir_rutas_moviles(academic_router.router, rutas_academicas_moviles)
+incluir_rutas_moviles(
+    academic_libreta_router.router,
+    {("/academic/libreta/{id_matricula}", "GET")},
+)
+incluir_rutas_moviles(
+    enrollment_router.router,
+    {("/enrollment/estado-actual/{id_usuario}", "GET")},
+)
+incluir_rutas_moviles(
+    horario_router.router,
+    {
+        (ruta.path, "GET")
+        for ruta in horario_router.router.routes
+        if isinstance(ruta, APIRoute) and "GET" in (ruta.methods or ())
+        and ruta.path != "/horarios/materias-disponibles/{id_seccion}"
+    },
+)
+incluir_rutas_moviles(
+    management_router.router,
+    {
+        ("/gestion/notas/", "POST"),
+        ("/gestion/asistencia/", "POST"),
+        ("/gestion/asistencia/lote", "POST"),
+        ("/gestion/asistencia/seccion/{id_seccion}", "GET"),
+        ("/gestion/asistencia/reporte-resumen", "GET"),
+        ("/gestion/mis-cursos/{id_usuario}", "GET"),
+        ("/gestion/curso-detalle/{id_curso}/{id_usuario}", "GET"),
+        ("/gestion/resumen-notas/{id_usuario}", "GET"),
+        ("/gestion/mis-cursos-docente/{id_usuario}", "GET"),
+        ("/gestion/mis-cursos-docente-dashboard/{id_usuario}", "GET"),
+        ("/gestion/resumen-docente/{id_usuario}", "GET"),
+        ("/gestion/notificaciones/{id_usuario}", "GET"),
+        ("/gestion/notificaciones/{id_usuario}/contador", "GET"),
+        ("/gestion/mi-asistencia/{id_usuario}", "GET"),
+    },
+)
+rutas_conducta_moviles = {
+    (ruta.path, "GET")
+    for ruta in behavior_router.router.routes
+    if isinstance(ruta, APIRoute)
+    and "GET" in (ruta.methods or ())
+    and ruta.path != "/conducta/reportes/eliminados"
+}
+rutas_conducta_moviles.update(
+    {
+        ("/conducta/reportes/", "POST"),
+        ("/conducta/reportes/{id_reporte}", "PUT"),
+        ("/conducta/reportes/{id_reporte}/eliminar", "POST"),
+        ("/conducta/citas/", "POST"),
+        ("/conducta/citas/{id_cita}/completar", "PATCH"),
+        ("/conducta/citas/{id_cita}/reprogramar", "PATCH"),
+        ("/conducta/citas/{id_cita}/cancelar", "PATCH"),
+        ("/conducta/notas", "POST"),
+        ("/conducta/nota/{id_matricula}/{bimestre}", "DELETE"),
+    }
+)
+incluir_rutas_moviles(behavior_router.router, rutas_conducta_moviles)
 app.include_router(virtual_router.router)
-app.include_router(behavior_router.router)
-app.include_router(web_router.router)
-app.include_router(chatbot_router.router) 
-app.include_router(admision_router.router)
-app.include_router(pagina_web_router.router)
-app.include_router(personal_router.router)
-app.include_router(seguridad_router.router)
-app.include_router(mantenimiento_router.router)
-app.include_router(verano_router.router)
-app.include_router(multimedia_router.router)
+
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
