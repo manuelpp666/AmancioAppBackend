@@ -1,0 +1,14 @@
+# Campus AV Móvil — API en Flask + JWT. Python 3.12.
+#
+#   python -m venv .venv
+#   .venv/Scripts/python -m pip install -r requirements.txt    (Windows)
+#   .venv/bin/python -m pip install -r requirements.txt        (Linux/Mac)
+
+Flask>=3.1,<4
+PyJWT>=2.8,<3             # JWT
+SQLAlchemy==2.0.46        # ORM (los modelos vienen del campus web)
+PyMySQL==1.1.2            # driver MySQL
+cryptography==50.0.0      # PyMySQL lo necesita para MySQL 8 (caching_sha2_password)
+bcrypt==5.0.0             # hash de contraseñas (mismo formato que la base actual)
+python-dotenv>=1.0
+gunicorn>=22              # servidor para Render (en local basta `python run.py`)

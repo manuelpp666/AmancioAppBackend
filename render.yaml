@@ -1,0 +1,26 @@
+# Blueprint de Render. Las variables con `sync: false` se rellenan en el panel.
+services:
+  - type: web
+    name: campus-av-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --workers 2 --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ENTORNO
+        value: produccion
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
