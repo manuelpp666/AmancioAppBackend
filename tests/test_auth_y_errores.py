@@ -1,6 +1,9 @@
-"""Pruebas que NO necesitan base de datos: JWT, errores JSON y utilidades.
+"""Pruebas automáticas que NO necesitan base de datos: JWT, errores y utilidades.
 
 Ejecutar:  python -m unittest discover -s tests -v
+
+Cada prueba arma una mini-app de Flask con rutas de ejemplo protegidas por
+`@jwt_required`, les hace peticiones y revisa el código de respuesta.
 """
 import datetime as dt
 import os
@@ -8,6 +11,7 @@ import unittest
 from decimal import Decimal
 from types import SimpleNamespace
 
+# Una SECRET_KEY de prueba, antes de importar la app (config la lee al cargarse).
 os.environ.setdefault("SECRET_KEY", "x" * 40)
 os.environ.setdefault("ENTORNO", "desarrollo")
 
@@ -21,31 +25,32 @@ from app.utils import ProveedorJSON, extraer_dni, texto  # noqa: E402
 
 
 def construir_app():
+    """Mini-app con rutas de ejemplo para probar la seguridad y los errores."""
     app = Flask(__name__)
     app.json = ProveedorJSON(app)
     registrar_errores(app)
 
-    @app.get("/privada")
+    @app.get("/privada")                 # cualquier usuario con token
     @jwt_required()
     def privada():
         return jsonify(usuario_actual())
 
-    @app.get("/solo-docente")
+    @app.get("/solo-docente")            # solo el rol DOCENTE
     @jwt_required("DOCENTE")
     def solo_docente():
         return jsonify({"ok": True})
 
-    @app.get("/dueno/<int:uid>")
+    @app.get("/dueno/<int:uid>")         # solo el dueño (mismo id) o un ADMIN
     @jwt_required()
     def dueno(uid):
         exigir_dueno_o_roles(uid, "ADMIN")
         return jsonify({"ok": True})
 
-    @app.get("/boom")
+    @app.get("/boom")                    # simula un error inesperado (bug)
     def boom():
         raise RuntimeError("secreto interno")
 
-    @app.get("/fechas")
+    @app.get("/fechas")                  # para revisar cómo salen fechas y decimales
     def fechas():
         return jsonify({"f": dt.date(2026, 3, 9), "dt": dt.datetime(2026, 3, 9, 7, 30), "n": Decimal("14.50")})
 
@@ -53,14 +58,18 @@ def construir_app():
 
 
 def usuario(rol="ALUMNO", id_=7, nombre="ALU-12345678"):
+    """Usuario falso (sin base de datos) para crear tokens."""
     return SimpleNamespace(username=nombre, id_usuario=id_, rol=rol)
 
 
 def cab(token):
+    """Cabecera Authorization con el token."""
     return {"Authorization": f"Bearer {token}"}
 
 
 class PruebasJWT(unittest.TestCase):
+    """El token: cuándo se acepta y cuándo se rechaza."""
+
     def setUp(self):
         self.c = construir_app().test_client()
 
@@ -85,17 +94,20 @@ class PruebasJWT(unittest.TestCase):
         self.assertEqual(r.get_json()["detail"], "Token expirado")
 
     def test_firma_incorrecta_da_401(self):
+        # Token firmado con otra clave: alguien intentando falsificarlo.
         t = jwt.encode({"sub": "a", "exp": dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=5)},
                        "otra-clave-distinta-de-32-caracteres!!", algorithm="HS256")
         r = self.c.get("/privada", headers=cab(t))
         self.assertEqual((r.status_code, r.get_json()["detail"]), (401, "Token inválido"))
 
     def test_token_sin_firma_alg_none_es_rechazado(self):
+        # Ataque clásico: un token "sin firma" que dice ser ADMIN.
         t = jwt.encode({"sub": "a", "rol": "ADMIN", "exp": dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=5)},
                        None, algorithm="none")
         self.assertEqual(self.c.get("/privada", headers=cab(t)).status_code, 401)
 
     def test_token_sin_exp_es_rechazado(self):
+        # Un token sin fecha de vencimiento no se acepta.
         t = jwt.encode({"sub": "a"}, config.SECRET_KEY, algorithm=config.JWT_ALGORITHM)
         self.assertEqual(self.c.get("/privada", headers=cab(t)).status_code, 401)
 
@@ -109,13 +121,15 @@ class PruebasJWT(unittest.TestCase):
 
     def test_dueno_o_admin(self):
         mio = cab(crear_token(usuario("ALUMNO", id_=7)))
-        self.assertEqual(self.c.get("/dueno/7", headers=mio).status_code, 200)
-        self.assertEqual(self.c.get("/dueno/8", headers=mio).status_code, 403)
+        self.assertEqual(self.c.get("/dueno/7", headers=mio).status_code, 200)   # su propio dato
+        self.assertEqual(self.c.get("/dueno/8", headers=mio).status_code, 403)   # dato de otro
         admin = cab(crear_token(usuario("ADMIN", id_=1)))
-        self.assertEqual(self.c.get("/dueno/8", headers=admin).status_code, 200)
+        self.assertEqual(self.c.get("/dueno/8", headers=admin).status_code, 200)  # el admin sí puede
 
 
 class PruebasErrores(unittest.TestCase):
+    """Todos los errores salen en JSON y sin filtrar información interna."""
+
     def setUp(self):
         self.c = construir_app().test_client()
 
@@ -123,7 +137,7 @@ class PruebasErrores(unittest.TestCase):
         r = self.c.get("/no-existe")
         self.assertEqual(r.status_code, 404)
         self.assertIn("detail", r.get_json())
-        self.assertEqual(self.c.post("/privada").status_code, 405)
+        self.assertEqual(self.c.post("/privada").status_code, 405)   # método no permitido
 
     def test_500_no_filtra_el_mensaje_interno(self):
         r = self.c.get("/boom")
@@ -137,25 +151,27 @@ class PruebasErrores(unittest.TestCase):
 
 
 class PruebasUtilidades(unittest.TestCase):
+    """Funciones de ayuda de app/utils.py."""
+
     def test_extraer_dni(self):
         self.assertEqual(extraer_dni("ALU-12345678"), "12345678")
         self.assertEqual(extraer_dni("DOC-87654321"), "87654321")
-        self.assertEqual(extraer_dni("12345678"), "12345678")
-        self.assertEqual(extraer_dni("XYZ-1"), "XYZ-1")
+        self.assertEqual(extraer_dni("12345678"), "12345678")   # sin prefijo
+        self.assertEqual(extraer_dni("XYZ-1"), "XYZ-1")         # prefijo desconocido
         self.assertEqual(extraer_dni(""), "")
 
     def test_texto_valida_largo_y_tipo(self):
-        self.assertEqual(texto({"a": "  hola "}, "a"), "hola")
+        self.assertEqual(texto({"a": "  hola "}, "a"), "hola")   # quita espacios
         with self.assertRaises(ApiError) as e:
-            texto({}, "a")
+            texto({}, "a")                                       # falta y es requerido
         self.assertEqual(e.exception.status, 400)
         with self.assertRaises(ApiError):
-            texto({"a": "ab"}, "a", minimo=3)
+            texto({"a": "ab"}, "a", minimo=3)                    # muy corto
         with self.assertRaises(ApiError):
-            texto({"a": "x" * 11}, "a", maximo=10)
+            texto({"a": "x" * 11}, "a", maximo=10)               # muy largo
         with self.assertRaises(ApiError):
-            texto({"a": 5}, "a")
-        self.assertIsNone(texto({}, "a", requerido=False))
+            texto({"a": 5}, "a")                                 # no es texto
+        self.assertIsNone(texto({}, "a", requerido=False))       # opcional que falta
         self.assertEqual(texto({"a": ""}, "a", minimo=0, requerido=False), "")
 
 

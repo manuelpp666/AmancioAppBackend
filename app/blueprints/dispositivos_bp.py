@@ -1,10 +1,9 @@
-"""Módulo 12 (parte servidor) — Registro de tokens de notificaciones push.
+"""Módulo Dispositivos: guardar el token de notificaciones push del celular.
 
-POST   /dispositivos/token   registra o actualiza el token del teléfono
-DELETE /dispositivos/token   lo desasocia (cierre de sesión)
+POST   /dispositivos/token   registrar (o actualizar) el token del celular
+DELETE /dispositivos/token   dejar de enviar notificaciones a ese celular
 """
 from flask import Blueprint, jsonify
-from sqlalchemy.exc import IntegrityError
 
 from app.auth import jwt_required, usuario_actual
 from app.database import get_db
@@ -13,6 +12,7 @@ from app.models.dispositivo import DispositivoPush
 from app.utils import json_requerido, texto
 
 bp = Blueprint("dispositivos", __name__, url_prefix="/dispositivos")
+
 PLATAFORMAS = ("android", "ios")
 
 
@@ -27,25 +27,22 @@ def registrar_token():
         raise ApiError(400, "La plataforma debe ser 'android' o 'ios'")
     id_usuario = usuario_actual()["id"]
 
-    def _upsert() -> bool:
-        fila = db.query(DispositivoPush).filter(DispositivoPush.token == token).first()
-        if fila:   # mismo teléfono: se reasigna al usuario que acaba de entrar
-            fila.id_usuario, fila.plataforma, fila.activo = id_usuario, plataforma, True
-            return False
+    dispositivo = db.query(DispositivoPush).filter(DispositivoPush.token == token).first()
+
+    if dispositivo is None:
+        # Celular nuevo: se crea el registro → 201 (creado).
         db.add(DispositivoPush(id_usuario=id_usuario, token=token, plataforma=plataforma))
-        return True
+        codigo = 201
+    else:
+        # Celular ya conocido: pasa a ser del usuario actual (puede que antes
+        # lo usara otra persona) y se vuelve a activar → 200 (ok).
+        dispositivo.id_usuario = id_usuario
+        dispositivo.plataforma = plataforma
+        dispositivo.activo = True
+        codigo = 200
 
-    try:
-        creado = _upsert()
-        db.commit()
-    except IntegrityError:      # dos peticiones a la vez con el mismo token nuevo
-        db.rollback()
-        creado = _upsert()
-        db.commit()
-
-    resp = jsonify({"message": "Token registrado"})
-    resp.status_code = 201 if creado else 200
-    return resp
+    db.commit()
+    return jsonify({"message": "Token registrado"}), codigo
 
 
 @bp.delete("/token")
@@ -53,10 +50,15 @@ def registrar_token():
 def eliminar_token():
     db = get_db()
     token = texto(json_requerido(), "token", minimo=10, maximo=255)
-    n = (db.query(DispositivoPush)
-           .filter(DispositivoPush.token == token, DispositivoPush.id_usuario == usuario_actual()["id"])
-           .update({"activo": False}))
-    db.commit()
-    if not n:
+
+    # Solo se puede desactivar un token propio.
+    dispositivo = (db.query(DispositivoPush)
+                   .filter(DispositivoPush.token == token,
+                           DispositivoPush.id_usuario == usuario_actual()["id"])
+                   .first())
+    if dispositivo is None:
         raise ApiError(404, "Ese token no está registrado para tu cuenta")
+
+    dispositivo.activo = False   # no se borra: solo se deja de usar
+    db.commit()
     return jsonify({"message": "Token desasociado"})

@@ -1,0 +1,553 @@
+{
+  "info": {
+    "name": "AmancioApp API",
+    "_postman_id": "a34393d1-f7d2-4159-aa6e-0aa19fc8bfbe",
+    "description": "API de la app móvil AmancioApp (Flask + JWT).\n\n1. Arranca el servidor: `.venv/Scripts/python run.py`\n2. Ejecuta **Sesión / Login**: guarda el token solo.\n3. Prueba las demás peticiones.\n\nPara entrar con otro usuario cambia `username` y `password` en las variables de la colección (usuarios de prueba en `app/base_nueva.py`).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "username",
+      "value": "ALU-33333333"
+    },
+    {
+      "key": "password",
+      "value": "33333333"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Salud del servidor",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        },
+        "description": "Comprueba que el servidor está encendido.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Sesión",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usuarios/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "login"
+              ]
+            },
+            "description": "Devuelve el access_token y el rol. El script de Tests lo guarda en la variable `token`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Guarda el token del login para usarlo en las demás peticiones",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('token', pm.response.json().access_token);",
+                  "}",
+                  "pm.test('Login correcto', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con clave incorrecta (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usuarios/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"clave-mala\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rechaza la clave', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis permisos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/mis-permisos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "mis-permisos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usuarios/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "logout"
+              ]
+            },
+            "description": "El token_dispositivo es opcional: si se envía, ese teléfono deja de recibir notificaciones.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token_dispositivo\": \"token-de-prueba-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Perfil",
+      "item": [
+        {
+          "name": "Mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/perfil/mi-perfil/{{username}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "mi-perfil",
+                "{{username}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Perfil de otro usuario (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/perfil/mi-perfil/DOC-22222222",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "mi-perfil",
+                "DOC-22222222"
+              ]
+            },
+            "description": "Con un alumno logueado debe responder 403. Con el ADMIN responde 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar contacto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/perfil/contacto/{{username}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "contacto",
+                "{{username}}"
+              ]
+            },
+            "description": "En un alumno se guarda en su familiar. Los dos campos son opcionales.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"955555555\",\n  \"email\": \"rosa.quispe@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar dirección (alumno)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/perfil/alumno/{{username}}/direccion",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "alumno",
+                "{{username}}",
+                "direccion"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccion\": \"Av. Los Próceres 123, Lima\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar datos médicos (alumno)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/perfil/alumno/{{username}}/medicos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "alumno",
+                "{{username}}",
+                "medicos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enfermedad\": \"Asma leve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cambiar contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/perfil/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "perfil",
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Cambia la clave del usuario que inició sesión. Ojo: la cambia de verdad; después actualiza la variable `password`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"new_password\": \"NuevaClave2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dispositivos (notificaciones)",
+      "item": [
+        {
+          "name": "Registrar token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/dispositivos/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dispositivos",
+                "token"
+              ]
+            },
+            "description": "201 si es nuevo, 200 si ya existía. plataforma: android | ios.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token-de-prueba-123\",\n  \"plataforma\": \"android\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/dispositivos/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dispositivos",
+                "token"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token-de-prueba-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

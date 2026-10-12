@@ -1,36 +1,48 @@
-"""Campus AV Móvil — API REST en Flask + JWT sobre la base MySQL del campus web."""
+"""Campus AV Móvil — API REST en Flask + JWT.
+
+Aquí se arma la aplicación: configuración, base de datos, manejo de errores,
+rutas (blueprints) y comandos de consola.
+"""
 import os
 import time
 
-# Zona horaria del colegio: TIENE QUE IR antes de que nada calcule una fecha.
-# Render corre en UTC; sin esto, a las 7 pm de Lima el servidor ya cree que es
-# el día siguiente y la asistencia/horario se desfasan. (Solo Linux: tzset.)
+# Zona horaria del colegio (Lima). Va al inicio, antes de calcular cualquier fecha:
+# los servidores en la nube trabajan en UTC (5 horas adelante) y sin esto, a las
+# 7 pm en Lima el servidor creería que ya es el día siguiente.
+# `time.tzset` solo existe en Linux; en Windows esta parte se salta.
 if hasattr(time, "tzset"):
     os.environ["TZ"] = "America/Lima"
     time.tzset()
 
 
 def create_app():
+    """Crea y configura la aplicación Flask (patrón "application factory")."""
     from flask import Flask, jsonify
 
-    from app import config
+    from app import config, database
     from app.errors import registrar_errores
     from app.utils import ProveedorJSON
 
+    # 1. Revisar que el archivo .env tenga lo necesario (si no, falla con un mensaje claro).
     config.verificar()
 
+    # 2. Crear la app y decirle cómo convertir fechas y decimales a JSON.
     app = Flask(__name__)
     app.json = ProveedorJSON(app)
-    app.config["MAX_CONTENT_LENGTH"] = config.MAX_CONTENT_MB * 1024 * 1024
+    app.config["MAX_CONTENT_LENGTH"] = config.MAX_CONTENT_MB * 1024 * 1024  # tope por petición
 
-    from app import database
+    # 3. Conectar con MySQL y registrar todas las tablas (modelos).
     database.init_db()
-    from app import models  # noqa: F401  (registra todas las tablas)
+    from app import models  # noqa: F401
+    # Al terminar cada petición se cierra su sesión de base de datos.
     app.teardown_appcontext(database.cerrar_sesion)
 
+    # 4. Todos los errores se responden en JSON: {"detail": "mensaje"}.
     registrar_errores(app)
 
-    if config.ALLOWED_ORIGINS:   # solo hace falta si pruebas la app en navegador (Expo web)
+    # 5. CORS: solo hace falta si la app se prueba en un navegador (Expo web).
+    #    Desde el celular no se usa.
+    if config.ALLOWED_ORIGINS:
         @app.after_request
         def _cors(resp):
             from flask import request
@@ -42,21 +54,38 @@ def create_app():
                 resp.headers["Vary"] = "Origin"
             return resp
 
+    # 6. Registrar las rutas. Cada blueprint es un módulo con su prefijo de URL:
+    #    /usuarios (login), /perfil y /dispositivos.
     from app.blueprints.auth_bp import bp as auth_bp
     from app.blueprints.dispositivos_bp import bp as dispositivos_bp
     from app.blueprints.perfil_bp import bp as perfil_bp
-    for bp in (auth_bp, perfil_bp, dispositivos_bp):
-        app.register_blueprint(bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(perfil_bp)
+    app.register_blueprint(dispositivos_bp)
 
+    # Ruta de "salud": sirve para comprobar que el servidor está encendido.
     @app.get("/")
     def salud():
         return jsonify({"status": "ok", "servicio": "Campus AV Móvil API"})
 
-    @app.cli.command("crear-tabla-dispositivos")
-    def crear_tabla_dispositivos():
-        """Crea la tabla nueva `dispositivo_push` (no toca ninguna otra)."""
-        from app.models.dispositivo import DispositivoPush
-        DispositivoPush.__table__.create(bind=database.engine, checkfirst=True)
-        print("Tabla dispositivo_push lista.")
+    # 7. Comandos de consola para preparar la base de datos:
+    #    flask --app run crear-tablas
+    #    flask --app run datos-prueba
+    @app.cli.command("crear-tablas")
+    def crear_tablas():
+        """Crea las tablas que falten en la base (no borra ni modifica nada)."""
+        from app.base_nueva import crear_tablas
+        tablas = crear_tablas()
+        print(f"{len(tablas)} tablas listas: {', '.join(tablas)}")
+
+    @app.cli.command("datos-prueba")
+    def datos_prueba():
+        """Agrega los usuarios de prueba que falten (ver app/base_nueva.py)."""
+        from app.base_nueva import cargar_datos_prueba
+        creados = cargar_datos_prueba()
+        if creados:
+            print("Creados: " + ", ".join(creados))
+        else:
+            print("Los datos de prueba ya existían.")
 
     return app
