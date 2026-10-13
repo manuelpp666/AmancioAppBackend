@@ -4,9 +4,6 @@ API REST para la app móvil del Campus Virtual del colegio Amancio Varona.
 Usa su propia base MySQL (`amancio_app_movil`) con consultas **SQL escritas a mano**
 (PyMySQL) y una arquitectura por capas **Route → Service → Repository → Base de datos**.
 
-> 📘 **Para el examen:** [GUIA_EXAMEN.md](GUIA_EXAMEN.md) tiene el mapa del proyecto,
-> recetas paso a paso para modificarlo (probadas) y preguntas de sustentación.
-
 ## Arquitectura
 
 ```
@@ -88,7 +85,6 @@ app/
   services/                  *_service.py      reglas, validaciones y transacciones
   repositories/              *_repository.py   consultas SQL
 tests/                       pruebas automáticas (JWT, errores, validadores)
-GUIA_EXAMEN.md               cómo modificar la API (recetas) y preguntas de sustentación
 ```
 
 Cada módulo tiene sus tres archivos con el mismo nombre. Por ejemplo, asistencia:
@@ -303,4 +299,3 @@ sin conexión.
 - La colección de Postman completa (84 peticiones) pasa contra la base de XAMPP.
 - La base se puede crear de cero con `crear-tablas` + `datos-prueba`, o importando
   `database/amancio_app_movil.sql`; ambos caminos se probaron en bases temporales.
-- Las recetas de `GUIA_EXAMEN.md` se aplicaron tal cual a una copia del proyecto y funcionan.
