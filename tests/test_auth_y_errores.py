@@ -9,7 +9,6 @@ import datetime as dt
 import os
 import unittest
 from decimal import Decimal
-from types import SimpleNamespace
 
 # Una SECRET_KEY de prueba, antes de importar la app (config la lee al cargarse).
 os.environ.setdefault("SECRET_KEY", "x" * 40)
@@ -21,7 +20,7 @@ from flask import Flask, jsonify  # noqa: E402
 from app import config  # noqa: E402
 from app.auth import crear_token, exigir_dueno_o_roles, jwt_required, usuario_actual  # noqa: E402
 from app.errors import ApiError, registrar_errores  # noqa: E402
-from app.utils import ProveedorJSON, entero, extraer_dni, texto  # noqa: E402
+from app.utils import ProveedorJSON, enlace, entero, extraer_dni, fecha, fecha_hora, hora_texto, numero, texto  # noqa: E402
 
 
 def construir_app():
@@ -43,7 +42,7 @@ def construir_app():
     @app.get("/dueno/<int:uid>")         # solo el dueño (mismo id) o un ADMIN
     @jwt_required()
     def dueno(uid):
-        exigir_dueno_o_roles(uid, "ADMIN")
+        exigir_dueno_o_roles(usuario_actual(), uid, "ADMIN")
         return jsonify({"ok": True})
 
     @app.get("/boom")                    # simula un error inesperado (bug)
@@ -58,8 +57,8 @@ def construir_app():
 
 
 def usuario(rol="ALUMNO", id_=7, nombre="ALU-12345678"):
-    """Usuario falso (sin base de datos) para crear tokens."""
-    return SimpleNamespace(username=nombre, id_usuario=id_, rol=rol)
+    """Usuario falso (sin base de datos) para crear tokens: igual a una fila de `usuario`."""
+    return {"username": nombre, "id_usuario": id_, "rol": rol}
 
 
 def cab(token):
@@ -179,6 +178,32 @@ class PruebasUtilidades(unittest.TestCase):
         for malo in ({}, {"b": 5}, {"b": 0}, {"b": "2"}, {"b": 2.5}, {"b": True}):
             with self.assertRaises(ApiError):                    # falta, fuera de rango o no es entero
                 entero(malo, "b", minimo=1, maximo=4)
+
+    def test_numero_para_notas(self):
+        self.assertEqual(numero({"v": 15}, "v", minimo=0, maximo=20), 15.0)
+        self.assertEqual(numero({"v": 14.567}, "v", minimo=0, maximo=20), 14.57)   # 2 decimales
+        for malo in ({}, {"v": 21}, {"v": -1}, {"v": "15"}, {"v": True}):
+            with self.assertRaises(ApiError):                    # falta, fuera de 0-20 o no es número
+                numero(malo, "v", minimo=0, maximo=20)
+
+    def test_fechas_y_horas(self):
+        self.assertEqual(fecha({"f": "2026-10-13"}, "f"), dt.date(2026, 10, 13))
+        self.assertIsNone(fecha({}, "f", requerido=False))
+        self.assertEqual(fecha_hora({"f": "2026-10-20T10:00"}, "f"), dt.datetime(2026, 10, 20, 10, 0))
+        for malo in ("13/10/2026", "2026-13-01", "hoy"):
+            with self.assertRaises(ApiError):
+                fecha({"f": malo}, "f")
+        with self.assertRaises(ApiError):
+            fecha_hora({"f": "20/10/2026 10:00"}, "f")
+        self.assertEqual(hora_texto(dt.timedelta(hours=7, minutes=5)), "07:05")   # TIME de MySQL
+
+    def test_enlace(self):
+        self.assertEqual(enlace({"u": "https://a.com/x"}, "u"), "https://a.com/x")
+        self.assertIsNone(enlace({}, "u"))                       # opcional
+        with self.assertRaises(ApiError):
+            enlace({"u": "a.com/x"}, "u")                        # sin http(s)
+        with self.assertRaises(ApiError):
+            enlace({}, "u", requerido=True)
 
 
 if __name__ == "__main__":

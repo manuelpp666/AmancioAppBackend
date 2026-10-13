@@ -1,71 +1,160 @@
-# Campus AV Móvil — API (Flask + JWT)
+# Campus AV Móvil — API REST (Flask + JWT + MySQL)
 
 API REST para la app móvil del Campus Virtual del colegio Amancio Varona.
-Usa **su propia base MySQL** (`amancio_app_movil`), con una versión simplificada
-de los modelos del campus web, y expone solo lo que la app móvil necesita.
+Usa su propia base MySQL (`amancio_app_movil`) con consultas **SQL escritas a mano**
+(PyMySQL) y una arquitectura por capas **Route → Service → Repository → Base de datos**.
+
+> 📘 **Para el examen:** [GUIA_EXAMEN.md](GUIA_EXAMEN.md) tiene el mapa del proyecto,
+> recetas paso a paso para modificarlo (probadas) y preguntas de sustentación.
+
+## Arquitectura
+
+```
+ App móvil ──HTTP + JWT──▶  ROUTE        recibe la petición, protege con @jwt_required,
+                             │            saca los datos (JSON, URL, usuario del token)
+                             ▼
+                            SERVICE      valida los datos, aplica las reglas de negocio
+                             │            y maneja la transacción: COMMIT o ROLLBACK
+                             ▼
+                            REPOSITORY   solo consultas SQL (SELECT, INSERT, UPDATE, DELETE)
+                             │
+                             ▼
+                            MySQL
+```
+
+Ejemplo: `POST /material/4` (el docente publica un material)
+
+1. **Route** `material_routes.publicar` → `@jwt_required("DOCENTE")` revisa el token
+   y el rol, y pasa el JSON al service.
+2. **Service** `material_service.publicar` → comprueba que el curso exista (404) y que
+   el usuario sea su docente (403), valida título y bimestre 1–4 (400) y abre la transacción.
+3. **Repository** `material_repository.crear` → `INSERT INTO material_clase (...) VALUES (%s, ...)`.
+4. **Service** → `db.commit()`; si algo falla, `db.rollback()`. La route responde **201** con JSON.
+
+### Transacciones (COMMIT / ROLLBACK)
+
+La conexión trabaja con `autocommit=False`: nada se guarda hasta el `commit()`.
+Todos los services que escriben siguen el mismo patrón:
+
+```python
+db = get_db()
+try:
+    repositorio.insertar(...)      # uno o varios cambios
+    db.commit()                    # todo bien: se guardan
+except Exception:
+    db.rollback()                  # algo falló: se deshacen TODOS
+    raise
+```
+
+Operaciones con **varios cambios relacionados** (donde el rollback importa de verdad):
+
+| Endpoint | Cambios en una sola transacción |
+|---|---|
+| `POST /asistencia/lote` | borra la asistencia previa del día + inserta un registro por alumno |
+| `POST /notas/<id_carga>` | guarda (o corrige) la nota de una evaluación para cada alumno |
+| `POST /notas/<id_carga>/cerrar-bimestre` | un promedio por alumno en la libreta + el registro del cierre |
+| `PATCH /perfil/contacto/<username>` (alumno sin familiar) | crea el familiar + lo enlaza al alumno |
+| `flask --app run datos-prueba` | carga todos los datos de prueba |
+
+### Consultas SQL
+
+Todas están en `app/repositories/`. Los valores van siempre como parámetros `%s`
+(nunca pegados al texto), así PyMySQL los escapa y se evita la inyección SQL:
+
+```python
+consultar_uno("SELECT * FROM usuario WHERE username = %s", (username,))
+```
+
+`app/database.py` ofrece cuatro funciones: `consultar_uno`, `consultar_todos`,
+`insertar` (devuelve el id nuevo) y `ejecutar` (UPDATE/DELETE, devuelve filas afectadas).
 
 ## Estructura
 
 ```
-run.py                     punto de entrada (python run.py / gunicorn run:app)
+run.py                       punto de entrada (python run.py / gunicorn run:app)
+database/
+  schema.sql                 estructura de las 36 tablas (CREATE TABLE IF NOT EXISTS)
+  amancio_app_movil.sql      exportación completa (estructura + datos de prueba)
 app/
-  __init__.py              create_app(): registra blueprints, errores, zona horaria Lima
-  config.py                variables de entorno
-  database.py              engine + sesión por petición (scoped_session)
-  auth.py                  JWT: crear_token(), @jwt_required("ROL"), usuario_actual()
-  errors.py                ApiError y manejadores → siempre {"detail": "..."}
-  security.py              bcrypt
-  utils.py                 validación de JSON (texto, entero), fechas ISO, extraer_dni
-  models/                  tablas (simplificadas del campus web) + dispositivo_push
-  base_nueva.py            crear las tablas y cargar los datos de prueba
-  services/                lógica reutilizable: contacto (correo/teléfono según el rol)
-                           y cursos (año activo, quién puede ver o editar un curso)
-  blueprints/              rutas, un archivo por módulo
-tests/                     pruebas sin base de datos (JWT, errores, utilidades)
+  __init__.py                create_app(): registra rutas, errores y comandos de consola
+  config.py                  variables de entorno (.env)
+  database.py                conexión PyMySQL por petición + funciones para ejecutar SQL
+  auth.py                    JWT: crear_token(), @jwt_required("ROL"), usuario_actual()
+  errors.py                  ApiError y manejadores → siempre {"detail": "..."}
+  security.py                contraseñas con bcrypt
+  utils.py                   validadores (texto, entero, fecha, enlace...) y JSON
+  datos_prueba.py            crear tablas, cargar datos de prueba, reiniciar la demo
+  routes/                    *_routes.py       endpoints (un archivo por módulo)
+  services/                  *_service.py      reglas, validaciones y transacciones
+  repositories/              *_repository.py   consultas SQL
+tests/                       pruebas automáticas (JWT, errores, validadores)
+postman/                     colección con las 84 peticiones de prueba
+GUIA_EXAMEN.md               cómo modificar la API (recetas) y preguntas de sustentación
 ```
 
-## Cómo funciona una petición
-
-Ejemplo: la app pide `GET /perfil/mi-perfil/ALU-33333333` con su token.
-
-1. **Ruta** (`blueprints/perfil_bp.py`): Flask encuentra la función `mi_perfil`.
-2. **Seguridad** (`auth.py`): `@jwt_required()` lee el token de la cabecera
-   `Authorization: Bearer ...`, comprueba su firma y que no haya vencido.
-   Si falla → 401.
-3. **Permiso**: `exigir_dueno_o_roles` deja pasar solo al dueño del perfil o a un ADMIN
-   (si no → 403).
-4. **Base de datos** (`models/` + `database.py`): se consulta con SQLAlchemy,
-   usando clases de Python en vez de SQL a mano.
-5. **Lógica** (`services/contacto.py`): el correo y teléfono del alumno se toman
-   de su familiar.
-6. **Respuesta**: se devuelve JSON. Si algo falla en cualquier paso, `errors.py`
-   responde `{"detail": "mensaje"}` con el código adecuado.
+Cada módulo tiene sus tres archivos con el mismo nombre. Por ejemplo, asistencia:
+`routes/asistencia_routes.py` → `services/asistencia_service.py` →
+`repositories/asistencia_repository.py`.
 
 ## Puesta en marcha
 
 ```bash
-python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-cp .env.example .env        # rellena DB_* y SECRET_KEY
-flask --app run crear-tablas    # crea las tablas que falten (no borra nada)
-flask --app run datos-prueba    # usuarios de prueba (ver app/base_nueva.py)
-python run.py                   # http://localhost:5000
-python -m unittest discover -s tests -v    # pruebas
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt
+cp .env.example .env          # rellena DB_* y SECRET_KEY
 ```
 
-### Base local en XAMPP
+**Base de datos** (dos opciones):
 
-En esta PC, MySQL de XAMPP (MariaDB 10.4) escucha en el puerto **3310**, no en 3306.
-La base se creó una sola vez con:
+- **Importar la exportación** (lo más rápido): en phpMyAdmin → Importar →
+  `database/amancio_app_movil.sql`. Crea la base `amancio_app_movil` con todo.
+- **Crearla con los comandos**:
+  ```bash
+  mysql -u root -e "CREATE DATABASE amancio_app_movil CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  .venv/Scripts/python -m flask --app run crear-tablas     # ejecuta database/schema.sql
+  .venv/Scripts/python -m flask --app run datos-prueba     # agrega los datos de prueba
+  ```
+
+**Arrancar y probar**:
 
 ```bash
-C:/xampp/mysql/bin/mysql.exe -u root -h 127.0.0.1 -P 3310 -e "CREATE DATABASE amancio_app_movil CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+.venv/Scripts/python run.py                              # http://localhost:5000
+.venv/Scripts/python -m unittest discover -s tests -v   # pruebas automáticas
+.venv/Scripts/python -m flask --app run reiniciar-demo   # claves = DNI y bimestre 3 abierto otra vez
 ```
 
-y en `.env`: `DB_USER=root`, `DB_PASS=` (vacío), `DB_HOST=127.0.0.1:3310`,
-`DB_NAME=amancio_app_movil`. Los usuarios de prueba y su contraseña (= su DNI)
-están en el encabezado de `app/base_nueva.py`.
+En esta PC, MySQL de XAMPP (MariaDB 10.4) escucha en el puerto **3310**: en `.env`
+`DB_HOST=127.0.0.1:3310`, `DB_USER=root`, `DB_PASS=` (vacío), `DB_NAME=amancio_app_movil`.
+En otra computadora normalmente es el **3306**.
 
-## Endpoints (21)
+## Usuarios de prueba
+
+Contraseña = DNI (lo que va después del guion). Detalle en `app/datos_prueba.py`.
+
+| Usuario | Rol | Datos |
+|---|---|---|
+| ADM-11111111 | Administrador | Ana |
+| DOC-22222222 | Docente | Carlos · Matemática en 1ro A y 3ro A |
+| DOC-66666666 | Docente | María · Comunicación y Ciencia y Tecnología |
+| AUX-77777777 | Auxiliar | Jorge · registra asistencia y conducta |
+| PSI-88888888 | Psicólogo | Elena · atiende las citas |
+| ALU-33333333 | Alumno | Lucía · 3ro A · hermana de Mateo (misma mamá) |
+| ALU-44444444 | Alumno | Mateo · 1ro A · **primer ingreso pendiente** |
+| ALU-71111111 | Alumno | Sofía · 3ro A |
+| ALU-72222222 | Alumno | Diego · 3ro A |
+
+Datos académicos: año 2026 activo con 4 bimestres; secciones 1ro A, 3ro A y 3ro B de
+Secundaria; 3 cursos con horario sin choques; material, una clase virtual, asistencia
+de 3 fechas, 2 reportes de conducta, 2 citas (una atendida y una pendiente) y notas
+de 3ro A en Matemática y Comunicación: bimestres 1 y 2 **cerrados** y 3 **abierto**; y
+2 tareas de Matemática 3ro A (una vencida: Lucía entregó a tiempo y tiene nota, Sofía
+entregó tarde sin nota, Diego no entregó; otra con fecha futura).
+
+**Primer ingreso:** el login devuelve `debe_cambiar_password`. Si es `true`, la app
+obliga a cambiar la contraseña (la inicial es el DNI) con `POST /perfil/auth/change-password`,
+que la apaga. La nueva clave no puede ser el DNI.
+
+## Endpoints (51)
 
 | Método | Ruta | Acceso | Módulo |
 |---|---|---|---|
@@ -74,94 +163,144 @@ están en el encabezado de `app/base_nueva.py`.
 | GET | `/usuarios/mis-permisos` | JWT | Usuarios |
 | POST | `/usuarios/logout` | JWT | Usuarios |
 | GET | `/perfil/mi-perfil/<username>` | dueño o ADMIN | Perfil |
+| GET | `/perfil/mi-matricula` | ALUMNO | Perfil y matrícula |
 | PATCH | `/perfil/contacto/<username>` | dueño | Perfil |
 | PATCH | `/perfil/alumno/<username>/direccion` | ALUMNO dueño | Perfil |
 | PATCH | `/perfil/alumno/<username>/medicos` | ALUMNO dueño | Perfil |
-| POST | `/perfil/auth/change-password` | JWT | Perfil |
+| POST | `/perfil/auth/change-password` | JWT | Perfil / primer ingreso |
 | POST | `/dispositivos/token` | JWT | Dispositivos |
 | DELETE | `/dispositivos/token` | JWT | Dispositivos |
 | GET | `/academico/anio-activo` | JWT | Catálogo académico |
 | GET | `/academico/grados` | JWT | Catálogo académico |
 | GET | `/academico/secciones?grado=<id>` | JWT | Catálogo académico |
 | GET | `/academico/cursos` | JWT | Catálogo académico |
-| GET | `/cursos/mis-cursos` | ALUMNO o DOCENTE | Mis cursos |
-| GET | `/cursos/<id_carga>/alumnos` | DOCENTE del curso o ADMIN | Mis cursos |
-| GET | `/material/<id_carga>?bimestre=<n>` | docente o alumnos del curso, ADMIN | Material |
+| GET | `/cursos/mis-cursos` | ALUMNO, DOCENTE | Mis cursos |
+| GET | `/cursos/<id_carga>/alumnos` | DOCENTE del curso, ADMIN | Mis cursos |
+| GET | `/material/<id_carga>?bimestre=<n>` | docente/alumnos del curso, ADMIN | Material |
 | POST | `/material/<id_carga>` | DOCENTE del curso | Material |
 | PUT | `/material/item/<id_material>` | DOCENTE del curso | Material |
 | DELETE | `/material/item/<id_material>` | DOCENTE del curso | Material |
+| GET | `/clases/<id_carga>` | docente/alumnos del curso, ADMIN | Clases virtuales |
+| POST | `/clases/<id_carga>` | DOCENTE del curso | Clases virtuales |
+| PUT | `/clases/item/<id_clase>` | DOCENTE del curso | Clases virtuales |
+| DELETE | `/clases/item/<id_clase>` | DOCENTE del curso | Clases virtuales |
+| GET | `/tareas/<id_carga>` | docente/alumnos del curso, ADMIN | Tareas |
+| POST | `/tareas/<id_carga>` | DOCENTE del curso | Tareas |
+| DELETE | `/tareas/item/<id_tarea>` | DOCENTE del curso | Tareas |
+| POST | `/tareas/item/<id_tarea>/entregar` | ALUMNO del curso | Tareas |
+| GET | `/tareas/item/<id_tarea>/entregas` | DOCENTE del curso | Tareas |
+| PATCH | `/tareas/entregas/<id_entrega>/calificar` | DOCENTE del curso | Tareas |
+| GET | `/horario/mi-horario` | ALUMNO, DOCENTE | Horario |
+| POST | `/asistencia/lote` | AUXILIAR | Asistencia (transacción) |
+| GET | `/asistencia/seccion/<id_seccion>?fecha=<f>` | AUXILIAR, DOCENTE, ADMIN | Asistencia |
+| GET | `/asistencia/mia` | ALUMNO | Asistencia |
+| GET | `/notas/<id_carga>?bimestre=<n>` | DOCENTE del curso, ADMIN | Notas |
+| POST | `/notas/<id_carga>` | DOCENTE del curso | Notas (transacción) |
+| POST | `/notas/<id_carga>/cerrar-bimestre` | DOCENTE del curso | Notas (transacción) |
+| GET | `/notas/mis-notas?bimestre=<n>` | ALUMNO | Notas |
+| GET | `/notas/mi-libreta` | ALUMNO | Notas |
+| GET | `/conducta/faltas` | JWT | Conducta |
+| POST | `/conducta/reportes` | AUXILIAR | Conducta |
+| PATCH | `/conducta/reportes/<id_reporte>/anular` | AUXILIAR, ADMIN | Conducta |
+| GET | `/conducta/alumno/<id_alumno>` | el propio alumno o el personal | Conducta |
+| POST | `/citas` | ALUMNO | Citas de psicología |
+| GET | `/citas/mis-citas` | ALUMNO | Citas de psicología |
+| GET | `/citas/agenda?fecha=<f>` | PSICOLOGO | Citas de psicología |
+| PATCH | `/citas/<id_cita>/programar` | PSICOLOGO | Citas de psicología |
+| PATCH | `/citas/<id_cita>/completar` | PSICOLOGO | Citas de psicología |
+| PATCH | `/citas/<id_cita>/cancelar` | PSICOLOGO | Citas de psicología |
 
 Un **curso** (`id_carga`) es una *carga académica*: un curso dictado por un docente
 en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
 
-### Probar en Postman
+### Reglas de negocio principales
 
-Importa `postman/AmancioApp.postman_collection.json` (Import → archivo). Ejecuta
-primero **Sesión / Login (alumna)** y **Sesión / Login (docente)**: guardan los
-tokens solos (`token` y `token_docente`) y las demás peticiones los usan.
-**Mis cursos (alumna)** guarda el id del curso de Matemática en `id_carga`, y
-**Publicar material** guarda el id nuevo en `id_material`. Cada petición trae una
-prueba del código esperado, así que se puede correr todo con el **Runner**.
-Ojo: **Cambiar contraseña** cambia la clave de verdad (actualiza la variable
-`password` después, o el siguiente login dará 401).
+- **Asistencia por lote:** la lista debe incluir a *todos* los alumnos de la sección,
+  sin repetidos ni alumnos de otra sección; estado P, T, F o J; fecha no futura.
+  Registrar otra vez el mismo día reemplaza lo anterior.
+- **Notas:** cada nota pertenece a una *evaluación* ("Práctica 1", "Examen"...) y va de
+  0 a 20. El promedio del bimestre es el promedio simple de sus evaluaciones. Un bimestre
+  **cerrado** ya no acepta notas (409); para cerrarlo, todos los alumnos deben tener al
+  menos una nota (400). Al cerrar, el promedio pasa a la libreta (`resumen_nota`); con el
+  4.º bimestre cerrado el curso queda APROBADO (≥ 11) o DESAPROBADO.
+- **Tareas:** la fecha límite debe ser futura al publicar. El alumno entrega con un enlace
+  y puede volver a entregar mientras no esté calificada (después → 409). Una entrega tardía
+  se acepta pero queda marcada `fuera_de_plazo` (regla `ACEPTAR_FUERA_DE_PLAZO` en
+  `tarea_service.py`). Se califica una sola vez, de 0 a 20 (409 si se repite). No se borra
+  una tarea con entregas (409). Estado para el alumno: PENDIENTE, VENCIDA, ENTREGADA o CALIFICADA.
+- **Conducta:** nota = 20 − puntos de los reportes vigentes del bimestre (mínimo 0);
+  se calcula con SQL (`SUM` + `GROUP BY` por bimestre), no se guarda. Un reporte no se
+  borra: se **anula** con motivo, quién y cuándo (anular dos veces → 409).
+- **Citas:** PENDIENTE → PROGRAMADA → ATENDIDA, o CANCELADA. Solo una cita activa por
+  alumno (409). Programar exige fecha futura. La observación del psicólogo no la ve el alumno.
+- **Cursos:** un docente solo edita sus cursos; un alumno solo ve los de su sección.
 
-Probar el login con curl:
+### Códigos HTTP
 
-```bash
-curl -X POST http://localhost:5000/usuarios/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"ALU-12345678","password":"12345678"}'
-# luego:  -H "Authorization: Bearer <access_token>"
-```
+Todas las respuestas de error son `{"detail": "mensaje"}`.
 
-## Versión simplificada
+| Código | Cuándo |
+|---|---|
+| 200 / 201 | OK / creado |
+| 400 | datos inválidos (falta un campo, bimestre 5, fecha mal escrita...) |
+| 401 | sin token, token vencido o alterado, credenciales inválidas |
+| 403 | rol sin permiso, o recurso de otro usuario |
+| 404 | no existe (curso, cita, alumno...) |
+| 409 | conflicto: bimestre cerrado, entrega ya calificada, tarea con entregas, ya anulado, cita activa repetida, estado que no permite la acción, dato duplicado en MySQL |
+| 500 / 503 | error interno / MySQL no responde |
 
-Para mantener el proyecto pequeño se quitaron estos modelos del campus web:
-`tutor_seccion`, `exoneracion_curso`,
-`exoneracion` (de matrícula), horario (`hora_lectiva`, `horario_escolar`,
-`configuracion_horario`, `receso_horario`), conducta (`tipo_falta`,
-`nivel_conducta`, `reporte_conducta`, `reporte_conducta_eliminado`,
-`cita_psicologia`, `nota_conducta`), `clase_virtual`, `drive_clases`, y los de
-login avanzado: `intento_acceso`, `solicitud_acceso` y `pagina_configuracion`.
+## Probar en Postman
 
-**Un familiar por alumno.** En vez de la tabla `relacion_familiar` (varios
-familiares por alumno), cada alumno apunta a un solo familiar con
-`alumno.id_familiar`; un familiar sí puede tener varios hijos. El correo y el
-teléfono del alumno se guardan en ese familiar, y `mi-perfil` devuelve
-`"familiar": {...}` (o `null`) en lugar de una lista.
+Importa `postman/AmancioApp.postman_collection.json`. Ejecuta primero la carpeta
+**Sesión** (guarda un token por rol) y luego el resto en orden, o toda la colección con
+el **Runner**: cada petición comprueba su código esperado y guarda los ids que necesitan
+las siguientes. Las carpetas **Notas** (cierra el bimestre 3) y **Primer ingreso** (cambia la
+clave de Mateo) solo se pueden ejecutar una vez; para repetirlas: `flask --app run reiniciar-demo`.
+
+## Entrega
+
+- Código: este repositorio (sin el archivo `.env`, que tiene la `SECRET_KEY`).
+- Base de datos: `database/amancio_app_movil.sql`.
 
 ## Decisiones
 
-- **PyJWT directo + decorador propio** (en vez de Flask-JWT-Extended): son ~60 líneas
-  legibles en `app/auth.py`, fáciles de explicar en la sustentación. El token lleva
-  `sub`, `id`, `rol`, `iat`, `exp` (igual que el backend original).
-- **Errores siempre en JSON con la clave `detail`**, para que el interceptor de la app
-  lea el mensaje de un solo sitio. Códigos usados: 400, 401, 403, 404, 500.
-- **Login mínimo**: usuario + contraseña → token. Sin primer ingreso (cambio de
-  clave o correo obligatorios) ni bloqueo por intentos fallidos; se pueden
-  recuperar del historial de git cuando el proyecto crezca.
-- Mejoras sobre el original: `mi-perfil` ya no deja ver el perfil de otro usuario;
-  la URL de MySQL escapa contraseñas con caracteres especiales; JWT exige `exp`.
+- **SQL directo con PyMySQL** (sin ORM): cada consulta se ve y se puede modificar en el
+  repository. La estructura está en `database/schema.sql`.
+- **PyJWT + decorador propio** `@jwt_required("ROL")`: el token lleva `sub`, `id`, `rol`,
+  `iat` y `exp` (60 min).
+- **Un familiar por alumno** (`alumno.id_familiar`): el correo y el teléfono del alumno
+  son los de su familiar; un familiar puede tener varios hijos.
+- Versión simplificada respecto al campus web: sin tutoría, exoneraciones, bloqueo por
+  intentos fallidos ni varios familiares por alumno.
 
-## Render
+## Pendiente (proyecto final)
 
-`render.yaml` ya define el servicio (gunicorn, 2 workers, `SECRET_KEY` autogenerada).
-Rellena `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME` en el panel. Render no ofrece MySQL:
-usa una MySQL externa. En el plan gratuito el servicio se duerme tras 15 min sin tráfico
-(la primera petición tarda ~1 min) y el disco es efímero.
+Comparado con la propuesta (*Contexto_Proyecto_Campus_AV_Movil*). El proyecto final se
+presentará en FastAPI.
 
-## Pendiente (fases siguientes)
-
-| Fase | Módulos de la app | Lógica original en el backend FastAPI |
+| Módulo de la propuesta | Estado | Qué falta |
 |---|---|---|
-| 2 | Asistencia, Notas/libreta | `management/router.py`, `academic/router_libreta.py` |
-| 3 | Tareas y entregas, Mensajería, Notificaciones | `virtual/router.py`, `management/router.py` |
-| 4 | Offline (`id_operacion` idempotente) y envío push (FCM) | nuevo |
+| 1. Autenticación, sesión y roles | ✅ | — |
+| 2. Panel de inicio por rol | ❌ | resumen por rol (próximas tareas, últimas notas, citas del día...) |
+| 3. Notas y libreta | ✅ | (exoneraciones: quitadas en la versión simplificada) |
+| 4. Asistencia | 🟡 | reporte por sección y rango de fechas |
+| 5. Conducta | 🟡 | ajuste de la nota por el tutor; subir la foto (hoy es un enlace) |
+| 6. Citas de psicología | 🟡 | listado de seguimiento de alumnos con reportes; historial de cambios |
+| 7. Cursos y aula virtual | ✅ | (la entrega es un enlace; subir el archivo o la foto queda para FastAPI) |
+| 8. Horario escolar | ✅ | — |
+| 9. Mensajería interna | ❌ | contactos, conversaciones y mensajes |
+| 10. Perfil y matrícula | ✅ | — |
+| 11. Persistencia local y offline | ❌ | que la API reconozca un `id_operacion` repetido (idempotencia) |
+| 12. Notificaciones y dispositivo | 🟡 | el token se guarda, pero falta enviar las notificaciones (FCM) |
+
+**Datos mínimos de la demostración** (sección 13 de la propuesta) que faltan: 8 alumnos
+en la sección de prueba (hay 3), una conversación con mensajes y una operación hecha
+sin conexión.
 
 ## Estado de verificación
 
-- 15 pruebas automáticas sin base de datos (JWT, errores, utilidades).
-- La colección de Postman completa (27 peticiones) pasa contra la base local de XAMPP.
-- Probado también: permisos de cada curso (un docente no ve ni edita cursos ajenos,
-  un alumno solo ve los cursos de su sección), validaciones del material (bimestre
-  1 a 4, enlace http/https, título obligatorio).
+- 18 pruebas automáticas (JWT, errores, validadores de texto, números, notas, fechas y enlaces).
+- La colección de Postman completa (84 peticiones) pasa contra la base de XAMPP.
+- La base se puede crear de cero con `crear-tablas` + `datos-prueba`, o importando
+  `database/amancio_app_movil.sql`; ambos caminos se probaron en bases temporales.
+- Las recetas de `GUIA_EXAMEN.md` se aplicaron tal cual a una copia del proyecto y funcionan.

@@ -24,13 +24,14 @@ from app import config
 from app.errors import ApiError
 
 
-def crear_token(usuario) -> str:
-    """Crea el token JWT de un usuario. Dura JWT_EXPIRE_MINUTES (60 min por defecto)."""
+def crear_token(usuario: dict) -> str:
+    """Crea el token JWT de un usuario (la fila de la tabla `usuario`).
+    Dura JWT_EXPIRE_MINUTES (60 min por defecto)."""
     ahora = datetime.now(timezone.utc)
     contenido = {
-        "sub": usuario.username,      # a quién pertenece el token
-        "id": usuario.id_usuario,
-        "rol": usuario.rol,
+        "sub": usuario["username"],   # a quién pertenece el token
+        "id": usuario["id_usuario"],
+        "rol": usuario["rol"],
         "iat": ahora,                 # cuándo se creó
         "exp": ahora + timedelta(minutes=config.JWT_EXPIRE_MINUTES),  # cuándo vence
     }
@@ -80,8 +81,8 @@ def usuario_actual() -> dict:
     return g.usuario
 
 
-def exigir_dueno_o_roles(id_usuario: int, *roles_permitidos: str) -> None:
-    """Deja pasar solo al dueño del dato (mismo id) o a uno de los roles indicados."""
-    yo = usuario_actual()
-    if yo["id"] != id_usuario and yo["rol"] not in roles_permitidos:
+def exigir_dueno_o_roles(usuario: dict, id_usuario: int, *roles_permitidos: str) -> None:
+    """Deja pasar solo al dueño del dato (mismo id) o a uno de los roles indicados.
+    `usuario` es el contenido del token (lo que devuelve usuario_actual())."""
+    if usuario["id"] != id_usuario and usuario["rol"] not in roles_permitidos:
         raise ApiError(403, "No puedes acceder a información de otro usuario")

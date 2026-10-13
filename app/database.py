@@ -1,58 +1,93 @@
-"""Conexión a MySQL con SQLAlchemy (el ORM: trabajar con tablas como clases de Python).
+"""Conexión a MySQL con PyMySQL y funciones para ejecutar SQL.
 
-- `Base`: clase de la que heredan todos los modelos (cada modelo = una tabla).
-- `init_db()`: abre la conexión al arrancar el servidor.
-- `get_db()`: da la sesión de la petición actual, para consultar y guardar.
+Cada petición HTTP usa UNA conexión, que se abre la primera vez que se pide
+(`get_db`) y se cierra al terminar la petición (`cerrar_db`).
+
+La conexión trabaja con autocommit desactivado: nada queda guardado hasta que
+el Service hace `db.commit()`. Si algo falla, el Service hace `db.rollback()`
+y se deshacen TODOS los cambios de esa operación (eso es una transacción).
+
+Los repositories usan estas cuatro funciones:
+    consultar_uno(sql, params)    SELECT que devuelve una fila (dict) o None
+    consultar_todos(sql, params)  SELECT que devuelve una lista de filas (dicts)
+    insertar(sql, params)         INSERT; devuelve el id de la fila creada
+    ejecutar(sql, params)         UPDATE / DELETE; devuelve cuántas filas afectó
+
+Los valores SIEMPRE van en `params` con %s, nunca pegados al texto del SQL:
+así PyMySQL los escapa y se evita la inyección SQL.
 """
-from sqlalchemy import create_engine
-from sqlalchemy.engine import URL
-from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
+import pymysql
+from flask import g
+from pymysql.constants import CLIENT
 
 from app import config
 
-# Base de todos los modelos. Se crea sin conectar, así los modelos se pueden
-# importar aunque no haya base de datos (por ejemplo, en las pruebas).
-Base = declarative_base()
 
-# Fábrica de sesiones. `scoped_session` da una sesión distinta por cada petición
-# (Flask atiende cada petición en su propio hilo), así no se mezclan los datos.
-SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False))
-
-# El "engine" es la conexión con MySQL. Se crea en init_db().
-engine = None
+def _host_y_puerto():
+    """DB_HOST puede venir como "127.0.0.1:3310"; se separa el host del puerto."""
+    if ":" in config.DB_HOST:
+        host, puerto = config.DB_HOST.rsplit(":", 1)
+        return host, int(puerto)
+    return config.DB_HOST, 3306
 
 
-def _url() -> URL:
-    """Arma la dirección de conexión: mysql+pymysql://usuario:clave@host:puerto/base"""
-    host, puerto = config.DB_HOST, None
-    # Si DB_HOST viene como "127.0.0.1:3310", separar el host del puerto.
-    if ":" in host:
-        host, puerto = host.rsplit(":", 1)
-        puerto = int(puerto)
-    # URL.create escapa sola las contraseñas con caracteres especiales (@, /, #).
-    return URL.create("mysql+pymysql", username=config.DB_USER, password=config.DB_PASS,
-                      host=host, port=puerto, database=config.DB_NAME,
-                      query={"charset": "utf8mb4"})   # utf8mb4 = tildes, ñ y emojis
-
-
-def init_db() -> None:
-    """Crea la conexión con MySQL. Se llama una vez, al arrancar el servidor."""
-    global engine
-    engine = create_engine(
-        _url(),
-        pool_size=5,         # conexiones abiertas que se reutilizan entre peticiones
-        max_overflow=10,     # conexiones extra permitidas en momentos de mucha carga
-        pool_pre_ping=True,  # comprueba que la conexión siga viva antes de usarla
-        pool_recycle=1800,   # renueva cada conexión a los 30 min (MySQL cierra las viejas)
+def conectar():
+    """Abre una conexión nueva con MySQL."""
+    host, puerto = _host_y_puerto()
+    return pymysql.connect(
+        host=host,
+        port=puerto,
+        user=config.DB_USER,
+        password=config.DB_PASS,
+        database=config.DB_NAME,
+        charset="utf8mb4",                      # tildes, ñ y emojis
+        cursorclass=pymysql.cursors.DictCursor,  # cada fila llega como dict {"columna": valor}
+        autocommit=False,                        # los cambios se confirman con commit()
+        # UPDATE devuelve las filas ENCONTRADAS por el WHERE (aunque el valor no
+        # cambie), no solo las que cambiaron. Así "0" significa "no existe".
+        client_flag=CLIENT.FOUND_ROWS,
     )
-    SessionLocal.configure(bind=engine)
 
 
 def get_db():
-    """Sesión de base de datos de la petición actual."""
-    return SessionLocal()
+    """Conexión de la petición actual (se crea la primera vez que se pide).
+    `g` es un espacio de Flask que dura solo lo que dura la petición."""
+    if "db" not in g:
+        g.db = conectar()
+    return g.db
 
 
-def cerrar_sesion(_error=None) -> None:
-    """Se ejecuta al final de cada petición: libera la sesión."""
-    SessionLocal.remove()
+def cerrar_db(_error=None) -> None:
+    """Se ejecuta al final de cada petición. Lo que no tuvo commit se descarta."""
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+# --- Funciones que usan los repositories ------------------------------------
+
+def consultar_uno(sql: str, params: tuple = ()):
+    """SELECT que devuelve una sola fila (dict), o None si no hay resultados."""
+    with get_db().cursor() as cursor:
+        cursor.execute(sql, params)
+        return cursor.fetchone()
+
+
+def consultar_todos(sql: str, params: tuple = ()) -> list:
+    """SELECT que devuelve todas las filas (lista de dicts; vacía si no hay)."""
+    with get_db().cursor() as cursor:
+        cursor.execute(sql, params)
+        return list(cursor.fetchall())
+
+
+def insertar(sql: str, params: tuple = ()) -> int:
+    """INSERT. Devuelve el id (AUTO_INCREMENT) de la fila creada."""
+    with get_db().cursor() as cursor:
+        cursor.execute(sql, params)
+        return cursor.lastrowid
+
+
+def ejecutar(sql: str, params: tuple = ()) -> int:
+    """UPDATE o DELETE. Devuelve cuántas filas cumplieron el WHERE (0 = ninguna)."""
+    with get_db().cursor() as cursor:
+        return cursor.execute(sql, params)
