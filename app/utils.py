@@ -72,6 +72,19 @@ def texto(datos: dict, campo: str, *, minimo: int = 1, maximo: int | None = None
     return valor
 
 
+def entero(datos: dict, campo: str, *, minimo: int, maximo: int) -> int:
+    """Lee un campo numérico entero (obligatorio) y valida que esté en el rango."""
+    valor = datos.get(campo)
+    if valor is None:
+        raise ApiError(400, f"Falta el campo '{campo}'")
+    # bool se excluye porque en Python True/False también cuentan como números.
+    if not isinstance(valor, int) or isinstance(valor, bool):
+        raise ApiError(400, f"El campo '{campo}' debe ser un número entero")
+    if not minimo <= valor <= maximo:
+        raise ApiError(400, f"El campo '{campo}' debe estar entre {minimo} y {maximo}")
+    return valor
+
+
 def extraer_dni(username: str) -> str:
     """Saca el DNI del nombre de usuario: 'ALU-12345678' → '12345678'.
     Si no tiene un prefijo conocido, devuelve el username tal cual."""

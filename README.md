@@ -15,10 +15,11 @@ app/
   auth.py                  JWT: crear_token(), @jwt_required("ROL"), usuario_actual()
   errors.py                ApiError y manejadores → siempre {"detail": "..."}
   security.py              bcrypt
-  utils.py                 validación de JSON, fechas ISO, extraer_dni
+  utils.py                 validación de JSON (texto, entero), fechas ISO, extraer_dni
   models/                  tablas (simplificadas del campus web) + dispositivo_push
   base_nueva.py            crear las tablas y cargar los datos de prueba
-  services/                lógica reutilizable (correo y teléfono según el rol)
+  services/                lógica reutilizable: contacto (correo/teléfono según el rol)
+                           y cursos (año activo, quién puede ver o editar un curso)
   blueprints/              rutas, un archivo por módulo
 tests/                     pruebas sin base de datos (JWT, errores, utilidades)
 ```
@@ -64,27 +65,45 @@ y en `.env`: `DB_USER=root`, `DB_PASS=` (vacío), `DB_HOST=127.0.0.1:3310`,
 `DB_NAME=amancio_app_movil`. Los usuarios de prueba y su contraseña (= su DNI)
 están en el encabezado de `app/base_nueva.py`.
 
-## Endpoints de la Fase 1
+## Endpoints (21)
 
 | Método | Ruta | Acceso | Módulo |
 |---|---|---|---|
-| POST | `/usuarios/login` | público | 1 |
-| GET | `/usuarios/mis-permisos` | JWT | 1 |
-| POST | `/usuarios/logout` | JWT | 1 / 12 |
-| GET | `/perfil/mi-perfil/<username>` | dueño o ADMIN | 10 |
-| PATCH | `/perfil/contacto/<username>` | dueño | 10 |
-| PATCH | `/perfil/alumno/<username>/direccion` | ALUMNO | 10 |
-| PATCH | `/perfil/alumno/<username>/medicos` | ALUMNO | 10 |
-| POST | `/perfil/auth/change-password` | JWT | 1 |
-| POST / DELETE | `/dispositivos/token` | JWT | 12 |
-| GET | `/` | público (salud) | — |
+| GET | `/` | público | Salud |
+| POST | `/usuarios/login` | público | Usuarios |
+| GET | `/usuarios/mis-permisos` | JWT | Usuarios |
+| POST | `/usuarios/logout` | JWT | Usuarios |
+| GET | `/perfil/mi-perfil/<username>` | dueño o ADMIN | Perfil |
+| PATCH | `/perfil/contacto/<username>` | dueño | Perfil |
+| PATCH | `/perfil/alumno/<username>/direccion` | ALUMNO dueño | Perfil |
+| PATCH | `/perfil/alumno/<username>/medicos` | ALUMNO dueño | Perfil |
+| POST | `/perfil/auth/change-password` | JWT | Perfil |
+| POST | `/dispositivos/token` | JWT | Dispositivos |
+| DELETE | `/dispositivos/token` | JWT | Dispositivos |
+| GET | `/academico/anio-activo` | JWT | Catálogo académico |
+| GET | `/academico/grados` | JWT | Catálogo académico |
+| GET | `/academico/secciones?grado=<id>` | JWT | Catálogo académico |
+| GET | `/academico/cursos` | JWT | Catálogo académico |
+| GET | `/cursos/mis-cursos` | ALUMNO o DOCENTE | Mis cursos |
+| GET | `/cursos/<id_carga>/alumnos` | DOCENTE del curso o ADMIN | Mis cursos |
+| GET | `/material/<id_carga>?bimestre=<n>` | docente o alumnos del curso, ADMIN | Material |
+| POST | `/material/<id_carga>` | DOCENTE del curso | Material |
+| PUT | `/material/item/<id_material>` | DOCENTE del curso | Material |
+| DELETE | `/material/item/<id_material>` | DOCENTE del curso | Material |
+
+Un **curso** (`id_carga`) es una *carga académica*: un curso dictado por un docente
+en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
 
 ### Probar en Postman
 
 Importa `postman/AmancioApp.postman_collection.json` (Import → archivo). Ejecuta
-primero **Sesión / Login**: guarda el token solo y las demás peticiones lo usan.
-Para entrar con otro usuario cambia `username` y `password` en las variables de
-la colección.
+primero **Sesión / Login (alumna)** y **Sesión / Login (docente)**: guardan los
+tokens solos (`token` y `token_docente`) y las demás peticiones los usan.
+**Mis cursos (alumna)** guarda el id del curso de Matemática en `id_carga`, y
+**Publicar material** guarda el id nuevo en `id_material`. Cada petición trae una
+prueba del código esperado, así que se puede correr todo con el **Runner**.
+Ojo: **Cambiar contraseña** cambia la clave de verdad (actualiza la variable
+`password` después, o el siguiente login dará 401).
 
 Probar el login con curl:
 
@@ -135,13 +154,14 @@ usa una MySQL externa. En el plan gratuito el servicio se duerme tras 15 min sin
 
 | Fase | Módulos de la app | Lógica original en el backend FastAPI |
 |---|---|---|
-| 2 | Notas/libreta, Asistencia | `management/router.py`, `academic/router_libreta.py` |
-| 3 | Aula virtual (tareas y material), Mensajería, Notificaciones | `virtual/router.py`, `management/router.py` |
+| 2 | Asistencia, Notas/libreta | `management/router.py`, `academic/router_libreta.py` |
+| 3 | Tareas y entregas, Mensajería, Notificaciones | `virtual/router.py`, `management/router.py` |
 | 4 | Offline (`id_operacion` idempotente) y envío push (FCM) | nuevo |
 
 ## Estado de verificación
 
-- 14 pruebas automáticas sin base de datos (JWT, errores, utilidades).
-- Probado a mano contra la base local de XAMPP: login (correcto, clave mala),
-  perfil de alumno/docente/admin, perfil ajeno (403), contacto del alumno guardado
-  en su familiar (los hermanos lo comparten), dirección, token push y logout.
+- 15 pruebas automáticas sin base de datos (JWT, errores, utilidades).
+- La colección de Postman completa (27 peticiones) pasa contra la base local de XAMPP.
+- Probado también: permisos de cada curso (un docente no ve ni edita cursos ajenos,
+  un alumno solo ve los cursos de su sección), validaciones del material (bimestre
+  1 a 4, enlace http/https, título obligatorio).

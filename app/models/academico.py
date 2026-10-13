@@ -22,6 +22,8 @@ class AnioEscolar(Base):
     inicio_inscripcion = Column(Date, nullable=True)         # periodo de matrícula
     fin_inscripcion = Column(Date, nullable=True)
 
+    bimestres = relationship("Bimestre", order_by="Bimestre.numero")
+
 
 class Bimestre(Base):
     """Fechas de inicio y fin de cada uno de los 4 bimestres de un año."""
@@ -99,6 +101,8 @@ class Curso(Base):
     es_verano = Column(Boolean, default=False)
     tipo_verano = Column(String(20), nullable=True)    # FIJO o TALLER
     grupo_verano = Column(String(20), nullable=True)   # ej. PRIM_1_2, SEC_1
+
+    area = relationship("Area")
 
 
 class PlanEstudio(Base):

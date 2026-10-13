@@ -21,7 +21,7 @@ from flask import Flask, jsonify  # noqa: E402
 from app import config  # noqa: E402
 from app.auth import crear_token, exigir_dueno_o_roles, jwt_required, usuario_actual  # noqa: E402
 from app.errors import ApiError, registrar_errores  # noqa: E402
-from app.utils import ProveedorJSON, extraer_dni, texto  # noqa: E402
+from app.utils import ProveedorJSON, entero, extraer_dni, texto  # noqa: E402
 
 
 def construir_app():
@@ -173,6 +173,12 @@ class PruebasUtilidades(unittest.TestCase):
             texto({"a": 5}, "a")                                 # no es texto
         self.assertIsNone(texto({}, "a", requerido=False))       # opcional que falta
         self.assertEqual(texto({"a": ""}, "a", minimo=0, requerido=False), "")
+
+    def test_entero_valida_tipo_y_rango(self):
+        self.assertEqual(entero({"b": 2}, "b", minimo=1, maximo=4), 2)
+        for malo in ({}, {"b": 5}, {"b": 0}, {"b": "2"}, {"b": 2.5}, {"b": True}):
+            with self.assertRaises(ApiError):                    # falta, fuera de rango o no es entero
+                entero(malo, "b", minimo=1, maximo=4)
 
 
 if __name__ == "__main__":

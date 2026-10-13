@@ -54,14 +54,19 @@ def create_app():
                 resp.headers["Vary"] = "Origin"
             return resp
 
-    # 6. Registrar las rutas. Cada blueprint es un módulo con su prefijo de URL:
-    #    /usuarios (login), /perfil y /dispositivos.
+    # 6. Registrar las rutas. Cada blueprint es un módulo con su prefijo de URL.
+    from app.blueprints.academico_bp import bp as academico_bp
     from app.blueprints.auth_bp import bp as auth_bp
+    from app.blueprints.cursos_bp import bp as cursos_bp
     from app.blueprints.dispositivos_bp import bp as dispositivos_bp
+    from app.blueprints.material_bp import bp as material_bp
     from app.blueprints.perfil_bp import bp as perfil_bp
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(perfil_bp)
-    app.register_blueprint(dispositivos_bp)
+    app.register_blueprint(auth_bp)            # /usuarios      login y sesión
+    app.register_blueprint(perfil_bp)          # /perfil        datos personales
+    app.register_blueprint(dispositivos_bp)    # /dispositivos  notificaciones
+    app.register_blueprint(academico_bp)       # /academico     año, grados, secciones, cursos
+    app.register_blueprint(cursos_bp)          # /cursos        mis cursos
+    app.register_blueprint(material_bp)        # /material      material de clase
 
     # Ruta de "salud": sirve para comprobar que el servidor está encendido.
     @app.get("/")

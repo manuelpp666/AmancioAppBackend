@@ -1,19 +1,9 @@
 {
   "info": {
     "name": "AmancioApp API",
-    "_postman_id": "a34393d1-f7d2-4159-aa6e-0aa19fc8bfbe",
-    "description": "API de la app móvil AmancioApp (Flask + JWT).\n\n1. Arranca el servidor: `.venv/Scripts/python run.py`\n2. Ejecuta **Sesión / Login**: guarda el token solo.\n3. Prueba las demás peticiones.\n\nPara entrar con otro usuario cambia `username` y `password` en las variables de la colección (usuarios de prueba en `app/base_nueva.py`).",
+    "_postman_id": "2974eca4-48aa-4200-9157-f8deb840f7e6",
+    "description": "API de la app móvil AmancioApp (Flask + JWT).\n\n1. Arranca el servidor: `.venv/Scripts/python run.py` (y MySQL de XAMPP).\n2. Ejecuta **Sesión / Login (alumna)** y **Sesión / Login (docente)**: guardan los tokens solos.\n3. Prueba las demás peticiones, o ejecuta toda la colección con el Runner.\n\nHay dos sesiones a la vez: `token` (alumna) y `token_docente` (docente). Los usuarios de prueba están en `app/base_nueva.py`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{token}}",
-        "type": "string"
-      }
-    ]
   },
   "variable": [
     {
@@ -29,7 +19,27 @@
       "value": "33333333"
     },
     {
+      "key": "username_docente",
+      "value": "DOC-22222222"
+    },
+    {
+      "key": "password_docente",
+      "value": "22222222"
+    },
+    {
       "key": "token",
+      "value": ""
+    },
+    {
+      "key": "token_docente",
+      "value": ""
+    },
+    {
+      "key": "id_carga",
+      "value": ""
+    },
+    {
+      "key": "id_material",
       "value": ""
     }
   ],
@@ -50,13 +60,25 @@
         "auth": {
           "type": "noauth"
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "Sesión",
+      "description": "Login, permisos y logout.",
       "item": [
         {
-          "name": "Login",
+          "name": "Login (alumna)",
           "request": {
             "method": "POST",
             "header": [
@@ -75,7 +97,7 @@
                 "login"
               ]
             },
-            "description": "Devuelve el access_token y el rol. El script de Tests lo guarda en la variable `token`.",
+            "description": "Guarda el token de la alumna en la variable `token`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
@@ -95,18 +117,68 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Guarda el token del login para usarlo en las demás peticiones",
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
                   "if (pm.response.code === 200) {",
                   "    pm.collectionVariables.set('token', pm.response.json().access_token);",
-                  "}",
-                  "pm.test('Login correcto', () => pm.response.to.have.status(200));"
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Login con clave incorrecta (401)",
+          "name": "Login (docente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usuarios/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "login"
+              ]
+            },
+            "description": "Guarda el token del docente en la variable `token_docente`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username_docente}}\",\n  \"password\": \"{{password_docente}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('token_docente', pm.response.json().access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con clave incorrecta",
           "request": {
             "method": "POST",
             "header": [
@@ -145,7 +217,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Rechaza la clave', () => pm.response.to.have.status(401));"
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
                 ]
               }
             }
@@ -177,7 +249,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Logout",
@@ -199,7 +282,7 @@
                 "logout"
               ]
             },
-            "description": "El token_dispositivo es opcional: si se envía, ese teléfono deja de recibir notificaciones.",
+            "description": "El token_dispositivo es opcional: si se envía, ese celular deja de recibir notificaciones. El token JWT sigue sirviendo hasta que venza; la app es la que lo borra.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"token_dispositivo\": \"token-de-prueba-123\"\n}",
@@ -219,12 +302,24 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
       "name": "Perfil",
+      "description": "Datos personales y contraseña.",
       "item": [
         {
           "name": "Mi perfil",
@@ -253,7 +348,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Perfil de otro usuario (403)",
@@ -271,7 +377,7 @@
                 "DOC-22222222"
               ]
             },
-            "description": "Con un alumno logueado debe responder 403. Con el ADMIN responde 200.",
+            "description": "Una alumna no puede ver el perfil de otro. Un ADMIN sí.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -282,7 +388,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualizar contacto",
@@ -325,7 +442,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualizar dirección (alumno)",
@@ -369,7 +497,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualizar datos médicos (alumno)",
@@ -413,7 +552,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Cambiar contraseña",
@@ -436,7 +586,7 @@
                 "change-password"
               ]
             },
-            "description": "Cambia la clave del usuario que inició sesión. Ojo: la cambia de verdad; después actualiza la variable `password`.",
+            "description": "Cambia la clave del usuario del token. Ojo: la cambia de verdad; después actualiza la variable `password`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"new_password\": \"NuevaClave2026\"\n}",
@@ -456,12 +606,24 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Dispositivos (notificaciones)",
+      "name": "Dispositivos",
+      "description": "Token de notificaciones push del celular.",
       "item": [
         {
           "name": "Registrar token",
@@ -483,7 +645,7 @@
                 "token"
               ]
             },
-            "description": "201 si es nuevo, 200 si ya existía. plataforma: android | ios.",
+            "description": "201 si el token es nuevo, 200 si ya existía. plataforma: android o ios.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"token\": \"token-de-prueba-123\",\n  \"plataforma\": \"android\"\n}",
@@ -503,7 +665,18 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Eliminar token",
@@ -545,7 +718,614 @@
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Catálogo académico",
+      "description": "Listas de solo lectura. Sirve cualquier usuario con sesión.",
+      "item": [
+        {
+          "name": "Año escolar activo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/academico/anio-activo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "academico",
+                "anio-activo"
+              ]
+            },
+            "description": "Año actual con sus 4 bimestres.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Grados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/academico/grados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "academico",
+                "grados"
+              ]
+            },
+            "description": "Niveles (Primaria/Secundaria) con sus grados.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Secciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/academico/secciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "academico",
+                "secciones"
+              ],
+              "query": [
+                {
+                  "key": "grado",
+                  "value": "9",
+                  "disabled": true,
+                  "description": "Opcional: activa este filtro para ver solo un grado"
+                }
+              ]
+            },
+            "description": "Secciones del año actual. Filtro opcional ?grado=<id_grado>.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cursos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/academico/cursos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "academico",
+                "cursos"
+              ]
+            },
+            "description": "Todos los cursos con su área.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mis cursos",
+      "description": "Cursos del año actual según quién inició sesión.",
+      "item": [
+        {
+          "name": "Mis cursos (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cursos/mis-cursos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cursos",
+                "mis-cursos"
+              ]
+            },
+            "description": "Cursos de la sección de la alumna. Guarda el id del curso de Matemática en `id_carga`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const mate = pm.response.json().find(c => c.curso === 'Matemática');",
+                  "    pm.collectionVariables.set('id_carga', mate.id_carga_academica);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis cursos (docente)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cursos/mis-cursos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cursos",
+                "mis-cursos"
+              ]
+            },
+            "description": "Cursos que dicta el docente.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alumnos de un curso (docente)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cursos/{{id_carga}}/alumnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cursos",
+                "{{id_carga}}",
+                "alumnos"
+              ]
+            },
+            "description": "Solo el docente del curso o un ADMIN.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alumnos de un curso (alumna → 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cursos/{{id_carga}}/alumnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cursos",
+                "{{id_carga}}",
+                "alumnos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Material de clase",
+      "description": "El docente publica, los alumnos consultan.",
+      "item": [
+        {
+          "name": "Ver material del curso (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/material/{{id_carga}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "material",
+                "{{id_carga}}"
+              ],
+              "query": [
+                {
+                  "key": "bimestre",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Opcional: activa este filtro para ver un solo bimestre"
+                }
+              ]
+            },
+            "description": "Pueden verlo el docente del curso, sus alumnos y el ADMIN.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar material (docente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/material/{{id_carga}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "material",
+                "{{id_carga}}"
+              ]
+            },
+            "description": "titulo y bimestre (1 a 4) son obligatorios. Guarda el id nuevo en `id_material`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Práctica calificada 1\",\n  \"bimestre\": 3,\n  \"descripcion\": \"Resolver antes del viernes.\",\n  \"archivo_url\": \"https://example.com/pc1.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('id_material', pm.response.json().material.id_material);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar material (alumna → 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/material/{{id_carga}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "material",
+                "{{id_carga}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"No debería poder\",\n  \"bimestre\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar material (docente)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/material/item/{{id_material}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "material",
+                "item",
+                "{{id_material}}"
+              ]
+            },
+            "description": "PUT reemplaza todo el material: los campos opcionales que no se envíen quedan vacíos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Práctica calificada 1 (corregida)\",\n  \"bimestre\": 3,\n  \"descripcion\": \"Resolver antes del lunes.\",\n  \"archivo_url\": \"https://example.com/pc1-v2.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar material (docente)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/material/item/{{id_material}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "material",
+                "item",
+                "{{id_material}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
