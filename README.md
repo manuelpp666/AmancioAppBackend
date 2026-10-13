@@ -85,6 +85,7 @@ app/
   services/                  *_service.py      reglas, validaciones y transacciones
   repositories/              *_repository.py   consultas SQL
 tests/                       pruebas automáticas (JWT, errores, validadores)
+postman/                     colección con las 84 peticiones de prueba
 ```
 
 Cada módulo tiene sus tres archivos con el mismo nombre. Por ejemplo, asistencia:
@@ -246,8 +247,7 @@ Todas las respuestas de error son `{"detail": "mensaje"}`.
 
 ## Probar en Postman
 
-La colección (`AmancioApp.postman_collection.json`, 84 peticiones) se entrega aparte,
-fuera de este repositorio. Impórtala en Postman y ejecuta primero la carpeta
+Importa `postman/AmancioApp.postman_collection.json` (84 peticiones). Ejecuta primero la carpeta
 **Sesión** (guarda un token por rol) y luego el resto en orden, o toda la colección con
 el **Runner**: cada petición comprueba su código esperado y guarda los ids que necesitan
 las siguientes. Las carpetas **Notas** (cierra el bimestre 3) y **Primer ingreso** (cambia la
