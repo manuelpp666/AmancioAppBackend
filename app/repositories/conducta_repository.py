@@ -79,3 +79,18 @@ def puntos_por_bimestre(id_alumno: int, id_anio: str) -> list:
         GROUP BY b.numero
         ORDER BY b.numero
     """, (id_alumno, id_anio))
+
+def registrar_reporte_lote(reportes: list) -> list:
+    """Registra varios reportes de conducta en un solo request (lote)."""
+    sql = """
+        INSERT INTO reporte_conducta
+            (id_alumno, id_nivel_conducta, registrado_por, fecha_reporte,
+             descripcion_suceso, evidencia_url, estado)
+        VALUES (%s, %s, %s, %s, %s, %s, 'REGISTRADO')
+    """
+    ids_reporte = []
+    for r in reportes:
+        id_reporte = insertar(sql, (r["id_alumno"], r["id_falta"], r["registrado_por"],
+                                    r["fecha_reporte"], r["descripcion"], r.get("evidencia_url")))
+        ids_reporte.append(id_reporte)
+    return ids_reporte

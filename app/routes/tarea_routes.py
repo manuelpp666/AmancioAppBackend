@@ -56,3 +56,10 @@ def entregas(id_tarea):
 @jwt_required("DOCENTE")
 def calificar(id_entrega):
     return jsonify(tarea_service.calificar(usuario_actual(), id_entrega, json_requerido()))
+
+# consultas de tareas y entregas (para ADMIN, DOCENTE o ALUMNO)
+
+@bp.get("/<int:id_carga>?bimestre=<int:bimestre>")
+@jwt_required()
+def listar_por_bimestre(id_carga, bimestre):
+    return jsonify(tarea_service.listar_por_bimestre(usuario_actual(), id_carga, bimestre))

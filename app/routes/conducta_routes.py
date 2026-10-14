@@ -40,3 +40,9 @@ def anular_reporte(id_reporte):
 @jwt_required()
 def estado_conducta(id_alumno):
     return jsonify(conducta_service.estado_conducta(usuario_actual(), id_alumno))
+
+@bp.post("/reportes/lote")
+@jwt_required("AUXILIAR")
+def registrar_reporte_lote():
+    """Registra varios reportes de conducta en un solo request (lote)."""
+    return jsonify(conducta_service.registrar_reporte_lote(usuario_actual(), json_requerido())), 201

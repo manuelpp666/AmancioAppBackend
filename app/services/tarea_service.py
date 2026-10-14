@@ -173,3 +173,19 @@ def calificar(usuario: dict, id_entrega: int, datos: dict) -> dict:
         db.rollback()
         raise
     return {"message": "Entrega calificada", "calificacion": calificacion}
+
+
+def listar_por_bimestre(usuario: dict, id_carga: int, bimestre: int) -> dict:
+    """Tareas de un curso filtradas por bimestre. El docente ve cuántas entregas tiene cada una;
+    el alumno ve el estado de SU entrega."""
+    carga = cursos_service.buscar_carga(id_carga)
+    cursos_service.exigir_ver_curso(usuario, carga)
+
+    if usuario["rol"] != "ALUMNO":
+        return {"curso": carga, "tareas": tarea_repository.listar_para_docente_por_bimestre(id_carga, bimestre)}
+
+    alumno = perfil_repository.alumno_por_usuario(usuario["id"])
+    tareas = tarea_repository.listar_para_alumno_por_bimestre(id_carga, alumno["id_alumno"], bimestre)
+    for tarea in tareas:
+        tarea.update(_estado_entrega(tarea, tarea["fecha_entrega"]))
+    return {"curso": carga, "tareas": tareas}

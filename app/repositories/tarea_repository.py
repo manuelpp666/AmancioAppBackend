@@ -114,3 +114,27 @@ def calificar(id_entrega: int, calificacion: float, observacion) -> int:
         SET calificacion = %s, retroalimentacion_docente = %s
         WHERE id_entrega = %s
     """, (calificacion, observacion, id_entrega))
+
+
+def listar_para_docente_por_bimestre(id_carga: int, bimestre: int) -> list:
+    """Tareas del curso con cuántas entregas tiene cada una y cuántas ya calificó."""
+    return consultar_todos(f"""
+        SELECT {_COLUMNAS_TAREA},
+               COUNT(e.id_entrega) AS entregas, COUNT(e.calificacion) AS calificadas
+        FROM tarea t
+        LEFT JOIN entrega_tarea e ON e.id_tarea = t.id_tarea
+        WHERE t.id_carga_academica = %s AND t.bimestre = %s
+        GROUP BY t.id_tarea
+        ORDER BY t.fecha_entrega
+    """, (id_carga, bimestre))
+
+def listar_para_alumno_por_bimestre(id_carga: int, id_alumno: int, bimestre: int) -> list:
+    """Tareas del curso con la entrega de ESE alumno (NULL si no entregó)."""
+    return consultar_todos(f"""
+        SELECT {_COLUMNAS_TAREA},
+               e.id_entrega, e.archivo_url, e.fecha_envio, e.calificacion, e.retroalimentacion_docente
+        FROM tarea t
+        LEFT JOIN entrega_tarea e ON e.id_tarea = t.id_tarea AND e.id_alumno = %s
+        WHERE t.id_carga_academica = %s AND t.bimestre = %s
+        ORDER BY t.fecha_entrega
+    """, (id_alumno, id_carga, bimestre))
