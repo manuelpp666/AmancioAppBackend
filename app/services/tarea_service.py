@@ -16,7 +16,7 @@ from datetime import datetime
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import perfil_repository, tarea_repository
-from app.services import cursos_service
+from app.services import cursos_service, perfil_service
 from app.utils import enlace, entero, fecha_hora, numero, texto
 
 NOTA_MAXIMA = 20

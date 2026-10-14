@@ -136,6 +136,24 @@ def enlace(datos: dict, campo: str, *, requerido: bool = False, maximo: int = 50
     return valor
 
 
+def lista(datos: dict, campo: str, *, minimo: int = 1, maximo: int | None = None) -> list:
+    """Lee un campo que debe ser una lista (obligatorio), ej. "alumnos": [3, 4].
+
+    Valida que exista, que sea una lista y cuántos elementos tiene.
+    NO revisa lo que hay dentro: eso lo hace cada service con su propio bucle.
+    """
+    valor = datos.get(campo)
+    if valor is None:
+        raise ApiError(400, f"Falta el campo '{campo}'")
+    if not isinstance(valor, list):
+        raise ApiError(400, f"El campo '{campo}' debe ser una lista")
+    if len(valor) < minimo:
+        raise ApiError(400, f"El campo '{campo}' debe tener al menos {minimo} elemento(s)")
+    if maximo is not None and len(valor) > maximo:
+        raise ApiError(400, f"El campo '{campo}' admite como máximo {maximo} elementos")
+    return valor
+
+
 def fecha_de_query(nombre: str = "fecha"):
     """Lee una fecha opcional de la URL (?fecha=2026-10-13). None si no viene."""
     valor = request.args.get(nombre)

@@ -20,7 +20,7 @@ from flask import Flask, jsonify  # noqa: E402
 from app import config  # noqa: E402
 from app.auth import crear_token, exigir_dueno_o_roles, jwt_required, usuario_actual  # noqa: E402
 from app.errors import ApiError, registrar_errores  # noqa: E402
-from app.utils import ProveedorJSON, enlace, entero, extraer_dni, fecha, fecha_hora, hora_texto, numero, texto  # noqa: E402
+from app.utils import ProveedorJSON, enlace, entero, extraer_dni, fecha, fecha_hora, hora_texto, lista, numero, texto  # noqa: E402
 
 
 def construir_app():
@@ -204,6 +204,16 @@ class PruebasUtilidades(unittest.TestCase):
             enlace({"u": "a.com/x"}, "u")                        # sin http(s)
         with self.assertRaises(ApiError):
             enlace({}, "u", requerido=True)
+
+    def test_lista(self):
+        self.assertEqual(lista({"l": [3, 4]}, "l"), [3, 4])
+        self.assertEqual(lista({"l": []}, "l", minimo=0), [])    # vacía permitida si minimo=0
+        for malo in ({}, {"l": None}, {"l": 3}, {"l": "3,4"}, {"l": {"id": 3}}, {"l": []}):
+            with self.assertRaises(ApiError) as e:               # falta, no es lista o está vacía
+                lista(malo, "l")
+            self.assertEqual(e.exception.status, 400)
+        with self.assertRaises(ApiError):
+            lista({"l": [1, 2, 3]}, "l", maximo=2)               # demasiados elementos
 
 
 if __name__ == "__main__":

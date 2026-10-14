@@ -13,7 +13,7 @@ from app.database import get_db
 from app.errors import ApiError
 from app.repositories import academico_repository, asistencia_repository, cursos_repository
 from app.services import academico_service, cursos_service
-from app.utils import entero, fecha, texto
+from app.utils import entero, fecha, lista, texto
 
 ESTADOS = ("P", "T", "F", "J")
 
@@ -32,9 +32,7 @@ def registrar_lote(datos: dict) -> dict:
     dia = fecha(datos, "fecha")
     if dia > date.today():
         raise ApiError(400, "No se puede registrar asistencia de una fecha futura")
-    registros = datos.get("registros")
-    if not isinstance(registros, list) or not registros:
-        raise ApiError(400, "El campo 'registros' debe ser una lista con al menos un alumno")
+    registros = lista(datos, "registros")        # 400 si no es lista o está vacía
 
     anio = academico_service.anio_activo()
     seccion = academico_repository.seccion_por_id(id_seccion)

@@ -15,7 +15,7 @@ from app.database import get_db
 from app.errors import ApiError
 from app.repositories import academico_repository, cursos_repository, nota_repository
 from app.services import academico_service, cursos_service
-from app.utils import entero, numero, texto
+from app.utils import entero, lista, numero, texto
 
 NOTA_MAXIMA = 20
 NOTA_APROBATORIA = 11
@@ -85,9 +85,7 @@ def registrar_notas(usuario: dict, id_carga: int, datos: dict) -> dict:
     # 1. Validar los datos generales.
     bimestre = entero(datos, "bimestre", minimo=1, maximo=4)
     evaluacion = texto(datos, "evaluacion", minimo=2, maximo=20)   # ej. "Práctica 1"
-    lista = datos.get("notas")
-    if not isinstance(lista, list) or not lista:
-        raise ApiError(400, "El campo 'notas' debe ser una lista con al menos un alumno")
+    items = lista(datos, "notas")                                   # 400 si no es lista o está vacía
 
     # 2. Regla: un bimestre cerrado ya no se puede modificar.
     if bimestre in nota_repository.bimestres_cerrados(id_carga):
@@ -97,7 +95,7 @@ def registrar_notas(usuario: dict, id_carga: int, datos: dict) -> dict:
     matriculados = {a["id_alumno"]: a for a in
                     cursos_repository.alumnos_de_seccion(carga["id_seccion"], carga["anio"])}
     notas = {}   # id_alumno → valor
-    for item in lista:
+    for item in items:
         if not isinstance(item, dict):
             raise ApiError(400, "Cada nota debe ser un objeto con id_alumno y valor")
         id_alumno = entero(item, "id_alumno", minimo=1, maximo=2_000_000_000)
