@@ -94,34 +94,74 @@ Cada módulo tiene sus tres archivos con el mismo nombre. Por ejemplo, asistenci
 
 ## Puesta en marcha
 
-```bash
-python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt
-cp .env.example .env          # rellena DB_* y SECRET_KEY
+### Primera ejecución (Windows)
+
+Sigue estos pasos la primera vez que descargues el proyecto:
+
+1. **Instala los requisitos:** Python y MySQL (por ejemplo, mediante XAMPP). Inicia
+   MySQL desde el panel de XAMPP y confirma el puerto que está usando.
+2. **Crea y activa el entorno virtual**, e instala las dependencias desde la carpeta
+   del proyecto:
+
+   ```powershell
+   py -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install -r requirements.txt
+   ```
+
+   Si PowerShell no permite activar el entorno, puedes omitir la activación y usar
+   `.venv\Scripts\python.exe` en lugar de `python` en los comandos siguientes.
+3. **Configura las variables de entorno:** crea un archivo `.env` en la raíz del
+   proyecto con los datos de tu MySQL. Ajusta el puerto y la contraseña a tu
+   instalación:
+
+   ```dotenv
+   DB_USER=root
+   DB_PASS=
+   DB_HOST=127.0.0.1:3306
+   DB_NAME=amancio_app_movil
+   SECRET_KEY=escribe-aqui-una-clave-aleatoria-de-al-menos-32-caracteres
+   ```
+
+   En XAMPP, `DB_PASS` suele estar vacío. En esta PC MySQL usa el puerto `3310`;
+   si ese es tu caso, cambia `DB_HOST` por `127.0.0.1:3310`. `SECRET_KEY` debe
+   tener al menos 32 caracteres.
+4. **Crea la base de datos y sus datos de prueba**. Elige una de estas opciones:
+   - **Importar la base completa (recomendado):** abre phpMyAdmin, selecciona
+     **Importar** y carga `database/amancio_app_movil.sql`.
+     Otra opcion:
+   - **Crear las tablas y cargar datos desde la consola:** para eso debes haber creado una nueva bd con el nombre que le pusiste a DB_NAME
+     ejecuta:
+
+     ```
+     python -m flask --app run crear-tablas
+     python -m flask --app run datos-prueba
+     ```
+
+     Si MySQL requiere contraseña, añade `-p` al comando `mysql`.
+5. **Levanta el servidor** desde la raíz del proyecto:
+
+   ```powershell
+   python run.py
+   ```
+
+   La API quedará disponible en `http://localhost:5000`. Puedes comprobar que
+   responde abriendo esa dirección en el navegador; debe devolver el estado de la API.
+6. **Configura Postman:** importa `postman/AmancioApp.postman_collection.json`.
+   En la colección, abre **Variables** y cambia `base_url` por la URL donde está
+   corriendo la API.   
+
+**Sesión**.
+
+Para volver a iniciar el servidor después de esta configuración, basta con activar
+el entorno virtual y ejecutar `python run.py`.
+
+**Comandos adicionales**:
+
+```powershell
+python -m unittest discover -s tests -v   # pruebas automáticas
+python -m flask --app run reiniciar-demo  # claves = DNI y bimestre 3 abierto otra vez
 ```
-
-**Base de datos** (dos opciones):
-
-- **Importar la exportación** (lo más rápido): en phpMyAdmin → Importar →
-  `database/amancio_app_movil.sql`. Crea la base `amancio_app_movil` con todo.
-- **Crearla con los comandos**:
-  ```bash
-  mysql -u root -e "CREATE DATABASE amancio_app_movil CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  .venv/Scripts/python -m flask --app run crear-tablas     # ejecuta database/schema.sql
-  .venv/Scripts/python -m flask --app run datos-prueba     # agrega los datos de prueba
-  ```
-
-**Arrancar y probar**:
-
-```bash
-.venv/Scripts/python run.py                              # http://localhost:5000
-.venv/Scripts/python -m unittest discover -s tests -v   # pruebas automáticas
-.venv/Scripts/python -m flask --app run reiniciar-demo   # claves = DNI y bimestre 3 abierto otra vez
-```
-
-En esta PC, MySQL de XAMPP (MariaDB 10.4) escucha en el puerto **3310**: en `.env`
-`DB_HOST=127.0.0.1:3310`, `DB_USER=root`, `DB_PASS=` (vacío), `DB_NAME=amancio_app_movil`.
-En otra computadora normalmente es el **3306**.
 
 ## Usuarios de prueba
 
@@ -269,25 +309,6 @@ clave de Mateo) solo se pueden ejecutar una vez; para repetirlas: `flask --app r
 - Versión simplificada respecto al campus web: sin tutoría, exoneraciones, bloqueo por
   intentos fallidos ni varios familiares por alumno.
 
-## Pendiente (proyecto final)
-
-Comparado con la propuesta (*Contexto_Proyecto_Campus_AV_Movil*). El proyecto final se
-presentará en FastAPI.
-
-| Módulo de la propuesta | Estado | Qué falta |
-|---|---|---|
-| 1. Autenticación, sesión y roles | ✅ | — |
-| 2. Panel de inicio por rol | ❌ | resumen por rol (próximas tareas, últimas notas, citas del día...) |
-| 3. Notas y libreta | ✅ | (exoneraciones: quitadas en la versión simplificada) |
-| 4. Asistencia | 🟡 | reporte por sección y rango de fechas |
-| 5. Conducta | 🟡 | ajuste de la nota por el tutor; subir la foto (hoy es un enlace) |
-| 6. Citas de psicología | 🟡 | listado de seguimiento de alumnos con reportes; historial de cambios |
-| 7. Cursos y aula virtual | ✅ | (la entrega es un enlace; subir el archivo o la foto queda para FastAPI) |
-| 8. Horario escolar | ✅ | — |
-| 9. Mensajería interna | ❌ | contactos, conversaciones y mensajes |
-| 10. Perfil y matrícula | ✅ | — |
-| 11. Persistencia local y offline | ❌ | que la API reconozca un `id_operacion` repetido (idempotencia) |
-| 12. Notificaciones y dispositivo | 🟡 | el token se guarda, pero falta enviar las notificaciones (FCM) |
 
 **Datos mínimos de la demostración** (sección 13 de la propuesta) que faltan: 8 alumnos
 en la sección de prueba (hay 3), una conversación con mensajes y una operación hecha
