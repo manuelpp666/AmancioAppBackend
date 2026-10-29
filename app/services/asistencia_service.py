@@ -118,3 +118,23 @@ def mi_asistencia(usuario: dict) -> dict:
         "registros": asistencia_repository.de_matricula(matricula["id_matricula"]),
         "resumen": _resumen(asistencia_repository.resumen_de_matricula(matricula["id_matricula"])),
     }
+
+
+def resumen_de_seccion(id_seccion: int, desde, hasta) -> dict:
+    """Reporte de asistencia de una sección entre dos fechas: por cada alumno, cuántos
+    P, T, F y J tiene y su porcentaje de asistencia ((P + T) / días registrados)."""
+    if desde is None or hasta is None:
+        raise ApiError(400, "Indica ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD")
+    if desde > hasta:
+        raise ApiError(400, "'desde' no puede ser mayor que 'hasta'")
+    seccion = academico_repository.seccion_por_id(id_seccion)
+    if seccion is None:
+        raise ApiError(404, "Sección no encontrada")
+
+    alumnos = asistencia_repository.resumen_por_alumno(id_seccion, seccion["id_anio_escolar"], desde, hasta)
+    for a in alumnos:
+        for estado in ESTADOS:
+            a[estado] = int(a[estado])         # SUM devuelve Decimal
+        a["porcentaje"] = round((a["P"] + a["T"]) * 100 / a["dias"], 1) if a["dias"] else None
+    return {"seccion": f"{seccion['grado']} {seccion['nombre']} - {seccion['nivel']}",
+            "desde": desde, "hasta": hasta, "alumnos": alumnos}

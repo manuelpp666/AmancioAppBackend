@@ -3,7 +3,7 @@ línea (Meet, Zoom...) y los alumnos del curso la consultan."""
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import clase_repository
-from app.services import cursos_service
+from app.services import cursos_service, notificacion_service
 from app.utils import enlace, fecha_hora, texto
 
 
@@ -37,6 +37,9 @@ def crear(usuario: dict, id_carga: int, datos: dict) -> dict:
     db = get_db()
     try:
         id_clase = clase_repository.crear(id_carga, c["tema"], c["fecha"], c["enlace"])
+        notificacion_service.notificar_seccion(
+            carga, "CLASE", f"Clase virtual de {carga['curso']}",
+            f"{c['tema'] or 'Clase en línea'} · {c['fecha']:%d/%m a las %H:%M}", id_clase)
         db.commit()
     except Exception:
         db.rollback()

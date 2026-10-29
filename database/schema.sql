@@ -580,4 +580,47 @@ CREATE TABLE IF NOT EXISTS `cierre_bimestre` (
   CONSTRAINT `chk_cierre_bimestre` CHECK (`bimestre` between 1 and 4)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- =============================================================================
+-- NOTIFICACIONES (bandeja de avisos de cada usuario)
+-- Se crean solas cuando pasa algo que le interesa al usuario: nueva tarea,
+-- entrega calificada, cita programada, nuevo mensaje...
+-- tipo: TAREA, CALIFICACION, CLASE, LIBRETA, CITA, CONDUCTA, MENSAJE.
+-- id_referencia: id de lo que se avisa (la tarea, la cita...), para que la app lo abra.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `notificacion` (
+  `id_notificacion` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `tipo` varchar(30) NOT NULL,
+  `titulo` varchar(150) NOT NULL,
+  `mensaje` varchar(300) NOT NULL,
+  `id_referencia` int(11) DEFAULT NULL,
+  `leida` tinyint(1) NOT NULL DEFAULT 0,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_notificacion`),
+  KEY `ix_notificacion_usuario_leida` (`id_usuario`,`leida`),
+  CONSTRAINT `notificacion_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =============================================================================
+-- OPERACIONES SIN CONEXIÓN (idempotencia)
+-- Cuando la app trabaja sin internet guarda la operación y la envía después con
+-- un id único (cabecera X-Id-Operacion). Aquí se guarda cada operación ya
+-- procesada con su respuesta: si el celular la reenvía, la API devuelve la misma
+-- respuesta sin volver a ejecutarla (no se duplica la entrega, el mensaje...).
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `operacion_offline` (
+  `id_operacion` varchar(64) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `metodo` varchar(10) NOT NULL,
+  `ruta` varchar(255) NOT NULL,
+  `codigo` smallint(6) NOT NULL,
+  `respuesta` longtext NOT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_operacion`),
+  KEY `id_usuario` (`id_usuario`),
+  CONSTRAINT `operacion_offline_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,5 +1,5 @@
 """Consultas SQL de la tabla `dispositivo_push` (tokens de notificaciones)."""
-from app.database import consultar_uno, ejecutar, insertar
+from app.database import consultar_todos, consultar_uno, ejecutar, insertar
 
 
 def buscar_por_token(token: str):
@@ -33,3 +33,15 @@ def desactivar(token: str, id_usuario: int) -> int:
         SET activo = 0, fecha_actualizacion = NOW()
         WHERE token = %s AND id_usuario = %s
     """, (token, id_usuario))
+
+
+def tokens_activos(id_usuarios: list) -> list:
+    """Tokens de los celulares activos de esos usuarios (para enviarles una notificación push)."""
+    if not id_usuarios:
+        return []
+    marcas = ", ".join(["%s"] * len(id_usuarios))      # un %s por cada usuario
+    filas = consultar_todos(f"""
+        SELECT token FROM dispositivo_push
+        WHERE activo = 1 AND id_usuario IN ({marcas})
+    """, tuple(id_usuarios))
+    return [fila["token"] for fila in filas]

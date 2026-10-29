@@ -3,6 +3,8 @@
 POST /asistencia/lote                               AUXILIAR: registra toda una sección (transacción)
 GET  /asistencia/seccion/<id_seccion>?fecha=<f>     AUXILIAR, DOCENTE, ADMIN: asistencia de un día
 GET  /asistencia/mia                                ALUMNO: su historial y resumen
+GET  /asistencia/seccion/<id_seccion>/resumen?desde=<f>&hasta=<f>
+                                                    AUXILIAR, DOCENTE, ADMIN: P/T/F/J y % por alumno
 
 JSON de /lote:
     {"id_seccion": 2, "fecha": "2026-10-13",
@@ -12,6 +14,7 @@ JSON de /lote:
 from flask import Blueprint, jsonify
 
 from app.auth import jwt_required, usuario_actual
+from app.offline import idempotente
 from app.services import asistencia_service
 from app.utils import fecha_de_query, json_requerido
 
@@ -20,6 +23,7 @@ bp = Blueprint("asistencia", __name__, url_prefix="/asistencia")
 
 @bp.post("/lote")
 @jwt_required("AUXILIAR")
+@idempotente
 def registrar_lote():
     return jsonify(asistencia_service.registrar_lote(json_requerido())), 201
 
@@ -34,3 +38,10 @@ def de_seccion(id_seccion):
 @jwt_required("ALUMNO")
 def mi_asistencia():
     return jsonify(asistencia_service.mi_asistencia(usuario_actual()))
+
+
+@bp.get("/seccion/<int:id_seccion>/resumen")
+@jwt_required("AUXILIAR", "DOCENTE", "ADMIN")
+def resumen_de_seccion(id_seccion):
+    return jsonify(asistencia_service.resumen_de_seccion(
+        id_seccion, fecha_de_query("desde"), fecha_de_query("hasta")))

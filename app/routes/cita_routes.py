@@ -6,10 +6,12 @@ GET   /citas/agenda?fecha=<f>          PSICOLOGO: citas del día y solicitudes p
 PATCH /citas/<id_cita>/programar       PSICOLOGO: {"fecha_cita": "2026-10-20T10:00"}
 PATCH /citas/<id_cita>/completar       PSICOLOGO: {"observacion": "..."}
 PATCH /citas/<id_cita>/cancelar        PSICOLOGO: {"motivo": "..."}
+GET   /citas/alumno/<id_alumno>        PSICOLOGO: historial completo del alumno (con observaciones)
 """
 from flask import Blueprint, jsonify
 
 from app.auth import jwt_required, usuario_actual
+from app.offline import idempotente
 from app.services import cita_service
 from app.utils import fecha_de_query, json_requerido
 
@@ -18,6 +20,7 @@ bp = Blueprint("citas", __name__, url_prefix="/citas")
 
 @bp.post("")
 @jwt_required("ALUMNO")
+@idempotente
 def solicitar():
     return jsonify(cita_service.solicitar(usuario_actual(), json_requerido())), 201
 
@@ -50,3 +53,9 @@ def completar(id_cita):
 @jwt_required("PSICOLOGO")
 def cancelar(id_cita):
     return jsonify(cita_service.cancelar(id_cita, json_requerido()))
+
+
+@bp.get("/alumno/<int:id_alumno>")
+@jwt_required("PSICOLOGO")
+def historial_de_alumno(id_alumno):
+    return jsonify(cita_service.historial_de_alumno(id_alumno))

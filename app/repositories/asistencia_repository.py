@@ -54,3 +54,27 @@ def resumen_de_matricula(id_matricula: int) -> list:
         WHERE id_matricula = %s
         GROUP BY estado
     """, (id_matricula,))
+
+
+def resumen_por_alumno(id_seccion: int, id_anio: str, desde, hasta) -> list:
+    """Cuántos P, T, F y J tiene cada alumno de la sección entre dos fechas.
+
+    SUM(a.estado = 'P') suma 1 por cada fila donde la condición es verdadera.
+    El filtro de fechas va en el ON del LEFT JOIN (no en el WHERE): así el alumno
+    sin registros en ese rango también sale, con 0 en todo.
+    """
+    return consultar_todos("""
+        SELECT al.id_alumno, al.apellidos, al.nombres,
+               COALESCE(SUM(a.estado = 'P'), 0) AS P,
+               COALESCE(SUM(a.estado = 'T'), 0) AS T,
+               COALESCE(SUM(a.estado = 'F'), 0) AS F,
+               COALESCE(SUM(a.estado = 'J'), 0) AS J,
+               COUNT(a.id_asistencia) AS dias
+        FROM matricula m
+        JOIN alumno al ON al.id_alumno = m.id_alumno
+        LEFT JOIN asistencia a ON a.id_matricula = m.id_matricula
+                              AND a.fecha BETWEEN %s AND %s
+        WHERE m.id_seccion = %s AND m.id_anio_escolar = %s
+        GROUP BY al.id_alumno, al.apellidos, al.nombres
+        ORDER BY al.apellidos, al.nombres
+    """, (desde, hasta, id_seccion, id_anio))

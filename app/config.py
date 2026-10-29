@@ -38,6 +38,9 @@ ALLOWED_ORIGINS = [o.strip() for o in (os.getenv("ALLOWED_ORIGINS") or "").split
 MAX_CONTENT_MB = _entero("MAX_CONTENT_MB", 12)   # tamaño máximo de una petición
 # Costo del hash bcrypt: más alto = más seguro pero más lento. Se limita entre 10 y 16.
 BCRYPT_ROUNDS = max(10, min(_entero("BCRYPT_ROUNDS", 12), 16))
+# Notificaciones push al celular (Expo). Apagado por defecto: las notificaciones se
+# guardan igual en la base (GET /notificaciones); con PUSH_ACTIVO=1 además se envían.
+PUSH_ACTIVO = (os.getenv("PUSH_ACTIVO") or "0").strip().lower() in ("1", "true", "si")
 
 
 def verificar() -> None:

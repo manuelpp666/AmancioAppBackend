@@ -49,7 +49,8 @@ def create_app():
             origen = request.headers.get("Origin")
             if origen in config.ALLOWED_ORIGINS:
                 resp.headers["Access-Control-Allow-Origin"] = origen
-                resp.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+                resp.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Id-Operacion"
+                resp.headers["Access-Control-Expose-Headers"] = "X-Operacion-Repetida"
                 resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
                 resp.headers["Vary"] = "Origin"
             return resp
@@ -57,7 +58,8 @@ def create_app():
     # 6. Registrar las rutas: cada archivo de app/routes es un módulo con su prefijo.
     from app.routes import (academico_routes, asistencia_routes, auth_routes, cita_routes,
                             clase_routes, conducta_routes, cursos_routes, dispositivo_routes,
-                            horario_routes, material_routes, nota_routes, perfil_routes,
+                            horario_routes, inicio_routes, material_routes, mensaje_routes,
+                            nota_routes, notificacion_routes, offline_routes, perfil_routes,
                             tarea_routes)
     app.register_blueprint(auth_routes.bp)          # /usuarios      login y sesión
     app.register_blueprint(perfil_routes.bp)        # /perfil        datos personales y contraseña
@@ -72,13 +74,26 @@ def create_app():
     app.register_blueprint(nota_routes.bp)          # /notas         notas, cierre de bimestre y libreta
     app.register_blueprint(conducta_routes.bp)      # /conducta      reportes y nota de conducta
     app.register_blueprint(cita_routes.bp)          # /citas         citas de psicología
+    app.register_blueprint(inicio_routes.bp)        # /inicio        panel de inicio por rol
+    app.register_blueprint(mensaje_routes.bp)       # /mensajes      mensajería interna
+    app.register_blueprint(notificacion_routes.bp)  # /notificaciones  bandeja de avisos
+    app.register_blueprint(offline_routes.bp)       # /offline       operaciones sin conexión
+
+    # 7. Al terminar una petición que salió bien, se envían los avisos push que
+    #    dejaron anotados los services (ver app/services/notificacion_service.py).
+    @app.after_request
+    def _enviar_push(resp):
+        if resp.status_code < 400:
+            from app.services import notificacion_service
+            notificacion_service.enviar_pendientes()
+        return resp
 
     # Ruta de "salud": sirve para comprobar que el servidor está encendido.
     @app.get("/")
     def salud():
         return jsonify({"status": "ok", "servicio": "Campus AV Móvil API"})
 
-    # 7. Comandos de consola para preparar la base de datos (ver app/datos_prueba.py).
+    # 8. Comandos de consola para preparar la base de datos (ver app/datos_prueba.py).
     @app.cli.command("crear-tablas")
     def crear_tablas():
         """Ejecuta database/schema.sql (crea las tablas que falten, no borra nada)."""

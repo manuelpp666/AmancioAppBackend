@@ -14,7 +14,7 @@ from datetime import date
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import academico_repository, cursos_repository, nota_repository
-from app.services import academico_service, cursos_service
+from app.services import academico_service, cursos_service, notificacion_service
 from app.utils import entero, lista, numero, texto
 
 NOTA_MAXIMA = 20
@@ -167,6 +167,9 @@ def cerrar_bimestre(usuario: dict, id_carga: int, datos: dict) -> dict:
     db = get_db()
     try:
         total = aplicar_cierre(carga, bimestre, usuario["id"])
+        notificacion_service.notificar_seccion(
+            carga, "LIBRETA", "Libreta actualizada",
+            f"{carga['curso']}: ya están tus notas del bimestre {bimestre}", id_carga)
         db.commit()
     except Exception:
         db.rollback()

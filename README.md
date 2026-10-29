@@ -51,6 +51,8 @@ Operaciones con **varios cambios relacionados** (donde el rollback importa de ve
 | `POST /notas/<id_carga>` | guarda (o corrige) la nota de una evaluación para cada alumno |
 | `POST /notas/<id_carga>/cerrar-bimestre` | un promedio por alumno en la libreta + el registro del cierre |
 | `PATCH /perfil/contacto/<username>` (alumno sin familiar) | crea el familiar + lo enlaza al alumno |
+| `POST /mensajes/conversaciones` | crea la conversación (si no existía) + el mensaje + el "último mensaje" + la notificación |
+| `POST /tareas/<id_carga>` | la tarea + una notificación para cada alumno de la sección |
 | `flask --app run datos-prueba` | carga todos los datos de prueba |
 
 ### Consultas SQL
@@ -70,22 +72,24 @@ consultar_uno("SELECT * FROM usuario WHERE username = %s", (username,))
 ```
 run.py                       punto de entrada (python run.py / gunicorn run:app)
 database/
-  schema.sql                 estructura de las 36 tablas (CREATE TABLE IF NOT EXISTS)
+  schema.sql                 estructura de las 38 tablas (CREATE TABLE IF NOT EXISTS)
   amancio_app_movil.sql      exportación completa (estructura + datos de prueba)
 app/
   __init__.py                create_app(): registra rutas, errores y comandos de consola
   config.py                  variables de entorno (.env)
   database.py                conexión PyMySQL por petición + funciones para ejecutar SQL
   auth.py                    JWT: crear_token(), @jwt_required("ROL"), usuario_actual()
+  offline.py                 @idempotente: operaciones sin conexión (cabecera X-Id-Operacion)
+  push.py                    envío de notificaciones push al celular (Expo)
   errors.py                  ApiError y manejadores → siempre {"detail": "..."}
   security.py                contraseñas con bcrypt
-  utils.py                   validadores (texto, entero, fecha, enlace...) y JSON
+  utils.py                   validadores (texto, entero, fecha, enlace, lista...) y JSON
   datos_prueba.py            crear tablas, cargar datos de prueba, reiniciar la demo
   routes/                    *_routes.py       endpoints (un archivo por módulo)
   services/                  *_service.py      reglas, validaciones y transacciones
   repositories/              *_repository.py   consultas SQL
-tests/                       pruebas automáticas (JWT, errores, validadores)
-postman/                     colección con las 84 peticiones de prueba
+tests/                       pruebas automáticas (JWT, errores, validadores, offline, push)
+postman/                     colección con las 121 peticiones de prueba
 ```
 
 Cada módulo tiene sus tres archivos con el mismo nombre. Por ejemplo, asistencia:
@@ -125,7 +129,8 @@ Sigue estos pasos la primera vez que descargues el proyecto:
 
    En XAMPP, `DB_PASS` suele estar vacío. En esta PC MySQL usa el puerto `3310`;
    si ese es tu caso, cambia `DB_HOST` por `127.0.0.1:3310`. `SECRET_KEY` debe
-   tener al menos 32 caracteres.
+   tener al menos 32 caracteres. Opcional: `PUSH_ACTIVO=1` para que las notificaciones
+   también se envíen al celular (por defecto solo se guardan en la base).
 4. **Crea la base de datos y sus datos de prueba**. Elige una de estas opciones:
    - **Importar la base completa (recomendado):** abre phpMyAdmin, selecciona
      **Importar** y carga `database/amancio_app_movil.sql`.
@@ -178,19 +183,23 @@ Contraseña = DNI (lo que va después del guion). Detalle en `app/datos_prueba.p
 | ALU-44444444 | Alumno | Mateo · 1ro A · **primer ingreso pendiente** |
 | ALU-71111111 | Alumno | Sofía · 3ro A |
 | ALU-72222222 | Alumno | Diego · 3ro A |
+| ALU-73333333, ALU-74444444, ALU-75555555, ALU-76666666, ALU-79999999 | Alumno | Valeria, Andrés, Camila, Joaquín y Renata · 3ro A |
 
 Datos académicos: año 2026 activo con 4 bimestres; secciones 1ro A, 3ro A y 3ro B de
 Secundaria; 3 cursos con horario sin choques; material, una clase virtual, asistencia
 de 3 fechas, 2 reportes de conducta, 2 citas (una atendida y una pendiente) y notas
 de 3ro A en Matemática y Comunicación: bimestres 1 y 2 **cerrados** y 3 **abierto**; y
 2 tareas de Matemática 3ro A (una vencida: Lucía entregó a tiempo y tiene nota, Sofía
-entregó tarde sin nota, Diego no entregó; otra con fecha futura).
+entregó tarde sin nota, el resto no entregó; otra con fecha futura). 3ro A tiene **8 alumnos**.
+Además: una **conversación** entre Lucía y el profesor Carlos (el último mensaje, sin leer),
+**notificaciones** de ejemplo y una **operación hecha sin conexión** ya sincronizada
+(la entrega de Sofía, id `demo-offline-sofia-0001`).
 
 **Primer ingreso:** el login devuelve `debe_cambiar_password`. Si es `true`, la app
 obliga a cambiar la contraseña (la inicial es el DNI) con `POST /perfil/auth/change-password`,
 que la apaga. La nueva clave no puede ser el DNI.
 
-## Endpoints (51)
+## Endpoints (64)
 
 | Método | Ruta | Acceso | Módulo |
 |---|---|---|---|
@@ -230,6 +239,7 @@ que la apaga. La nueva clave no puede ser el DNI.
 | POST | `/asistencia/lote` | AUXILIAR | Asistencia (transacción) |
 | GET | `/asistencia/seccion/<id_seccion>?fecha=<f>` | AUXILIAR, DOCENTE, ADMIN | Asistencia |
 | GET | `/asistencia/mia` | ALUMNO | Asistencia |
+| GET | `/asistencia/seccion/<id_seccion>/resumen?desde=<f>&hasta=<f>` | AUXILIAR, DOCENTE, ADMIN | Asistencia (reporte por fechas) |
 | GET | `/notas/<id_carga>?bimestre=<n>` | DOCENTE del curso, ADMIN | Notas |
 | POST | `/notas/<id_carga>` | DOCENTE del curso | Notas (transacción) |
 | POST | `/notas/<id_carga>/cerrar-bimestre` | DOCENTE del curso | Notas (transacción) |
@@ -245,6 +255,18 @@ que la apaga. La nueva clave no puede ser el DNI.
 | PATCH | `/citas/<id_cita>/programar` | PSICOLOGO | Citas de psicología |
 | PATCH | `/citas/<id_cita>/completar` | PSICOLOGO | Citas de psicología |
 | PATCH | `/citas/<id_cita>/cancelar` | PSICOLOGO | Citas de psicología |
+| GET | `/citas/alumno/<id_alumno>` | PSICOLOGO | Citas (historial con observaciones) |
+| GET | `/inicio` | JWT (cada rol ve lo suyo) | Panel de inicio |
+| GET | `/mensajes/contactos` | JWT | Mensajería |
+| GET | `/mensajes/conversaciones` | JWT | Mensajería |
+| POST | `/mensajes/conversaciones` | JWT (a un contacto) | Mensajería (transacción) |
+| GET | `/mensajes/conversaciones/<id>` | participante | Mensajería |
+| POST | `/mensajes/conversaciones/<id>` | participante | Mensajería (transacción) |
+| PATCH | `/mensajes/conversaciones/<id>/leido` | participante | Mensajería |
+| GET | `/notificaciones?solo_no_leidas=1` | JWT | Notificaciones |
+| PATCH | `/notificaciones/<id>/leida` | dueño | Notificaciones |
+| PATCH | `/notificaciones/leer-todas` | JWT | Notificaciones |
+| GET | `/offline/operaciones/<id_operacion>` | dueño | Sin conexión |
 
 Un **curso** (`id_carga`) es una *carga académica*: un curso dictado por un docente
 en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
@@ -270,6 +292,21 @@ en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
 - **Citas:** PENDIENTE → PROGRAMADA → ATENDIDA, o CANCELADA. Solo una cita activa por
   alumno (409). Programar exige fecha futura. La observación del psicólogo no la ve el alumno.
 - **Cursos:** un docente solo edita sus cursos; un alumno solo ve los de su sección.
+- **Mensajería:** chat entre dos usuarios. Para *iniciar* una conversación el otro debe ser
+  tu contacto (403 si no): el alumno puede escribir a los docentes de su sección, a los
+  auxiliares y a la psicóloga; el docente, a sus alumnos y al personal; auxiliar, psicóloga
+  y admin, a cualquiera. Solo los dos participantes leen y responden (403).
+- **Notificaciones:** se crean solas, dentro de la misma transacción de la acción: nueva
+  tarea, entrega calificada, clase virtual, bimestre cerrado (libreta), cita programada o
+  cancelada, reporte de conducta y mensaje nuevo. Si la petición sale bien y `PUSH_ACTIVO=1`,
+  además se envían al celular (tokens de Expo de `/dispositivos/token`).
+- **Sin conexión:** las rutas que la app puede enviar offline (entregar tarea, asistencia por
+  lote, reporte de conducta, solicitar cita, registrar notas y enviar mensajes) aceptan la
+  cabecera `X-Id-Operacion`. Si llega dos veces el mismo id, la segunda NO se ejecuta: se
+  devuelve la respuesta guardada con la cabecera `X-Operacion-Repetida: true` (no se duplica
+  nada). Mismo id de otro usuario → 409; id con formato inválido → 400.
+- **Panel de inicio:** `GET /inicio` junta lo del día según el rol (clases de hoy, próximas
+  tareas, últimas notas, entregas por calificar, secciones sin asistencia, citas de hoy...).
 
 ### Códigos HTTP
 
@@ -287,11 +324,14 @@ Todas las respuestas de error son `{"detail": "mensaje"}`.
 
 ## Probar en Postman
 
-Importa `postman/AmancioApp.postman_collection.json` (84 peticiones). Ejecuta primero la carpeta
+Importa `postman/AmancioApp.postman_collection.json` (121 peticiones). Ejecuta primero la carpeta
 **Sesión** (guarda un token por rol) y luego el resto en orden, o toda la colección con
 el **Runner**: cada petición comprueba su código esperado y guarda los ids que necesitan
 las siguientes. Las carpetas **Notas** (cierra el bimestre 3) y **Primer ingreso** (cambia la
 clave de Mateo) solo se pueden ejecutar una vez; para repetirlas: `flask --app run reiniciar-demo`.
+Carpetas de los módulos nuevos: **Mensajería**, **Notificaciones**, **Panel de inicio** y
+**Sin conexión (offline)** (envía el mismo mensaje dos veces con el mismo `X-Id-Operacion`
+y comprueba que no se duplica).
 
 ## Entrega
 
@@ -308,15 +348,19 @@ clave de Mateo) solo se pueden ejecutar una vez; para repetirlas: `flask --app r
   son los de su familiar; un familiar puede tener varios hijos.
 - Versión simplificada respecto al campus web: sin tutoría, exoneraciones, bloqueo por
   intentos fallidos ni varios familiares por alumno.
+- **Notificaciones push con Expo** (`app/push.py`): la app está hecha con Expo, así que
+  basta con enviar el token del celular al servicio de Expo (sin credenciales de Firebase).
+  Se envían en segundo plano y nunca rompen la respuesta: la notificación ya quedó en la base.
+- **Idempotencia para el modo sin conexión** (`app/offline.py`): tabla `operacion_offline`
+  con el id de cada operación y su respuesta.
 
 
-**Datos mínimos de la demostración** (sección 13 de la propuesta) que faltan: 8 alumnos
-en la sección de prueba (hay 3), una conversación con mensajes y una operación hecha
-sin conexión.
+**Datos mínimos de la demostración** (sección 13 de la propuesta): incluidos en los datos
+de prueba (8 alumnos en 3ro A, una conversación con mensajes y una operación hecha sin conexión).
 
 ## Estado de verificación
 
-- 18 pruebas automáticas (JWT, errores, validadores de texto, números, notas, fechas y enlaces).
-- La colección de Postman completa (84 peticiones) pasa contra la base de XAMPP.
+- 22 pruebas automáticas (JWT, errores, validadores, id de operación offline y armado del push).
+- La colección de Postman completa (121 peticiones) pasa contra una base creada desde cero.
 - La base se puede crear de cero con `crear-tablas` + `datos-prueba`, o importando
   `database/amancio_app_movil.sql`; ambos caminos se probaron en bases temporales.

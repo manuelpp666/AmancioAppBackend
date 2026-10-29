@@ -2,7 +2,7 @@
   "info": {
     "name": "AmancioApp API",
     "_postman_id": "707eacd2-602d-4f1c-80ad-bf074b3e7a24",
-    "description": "API de la app móvil AmancioApp (Flask + JWT + MySQL). Arquitectura Route → Service → Repository.\n\n1. Arranca MySQL (XAMPP) y el servidor: `.venv/Scripts/python run.py`.\n2. Ejecuta la carpeta **Sesión** primero: guarda un token por rol.\n3. Prueba las demás carpetas en orden, o corre toda la colección con el **Runner**.\n\nLa carpeta **Primer ingreso** cambia la contraseña de Mateo. Para repetirla, ejecuta antes `flask --app run reiniciar-demo`.\n\nUsuarios de prueba: ver `app/datos_prueba.py` (contraseña = DNI).",
+    "description": "API de la app móvil AmancioApp (Flask + JWT + MySQL). Arquitectura Route → Service → Repository.\n\n1. Arranca MySQL (XAMPP) y el servidor: `.venv/Scripts/python run.py`.\n2. Ejecuta la carpeta **Sesión** primero: guarda un token por rol.\n3. Prueba las demás carpetas en orden, o corre toda la colección con el **Runner**.\n\nCarpetas nuevas: **Mensajería**, **Notificaciones**, **Panel de inicio** y **Sin conexión (offline)** (cabecera `X-Id-Operacion`).\n\nLa carpeta **Primer ingreso** cambia la contraseña de Mateo. Para repetirla, ejecuta antes `flask --app run reiniciar-demo`.\n\nUsuarios de prueba: ver `app/datos_prueba.py` (contraseña = DNI).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -140,6 +140,34 @@
     },
     {
       "key": "id_cita",
+      "value": ""
+    },
+    {
+      "key": "id_usuario_admin",
+      "value": ""
+    },
+    {
+      "key": "id_usuario_psicologo",
+      "value": ""
+    },
+    {
+      "key": "id_usuario_docente",
+      "value": ""
+    },
+    {
+      "key": "id_conversacion",
+      "value": ""
+    },
+    {
+      "key": "id_notificacion",
+      "value": ""
+    },
+    {
+      "key": "id_operacion",
+      "value": ""
+    },
+    {
+      "key": "id_mensaje_offline",
       "value": ""
     }
   ],
@@ -371,6 +399,7 @@
                   "",
                   "if (pm.response.code === 200) {",
                   "    pm.collectionVariables.set('token_psicologo', pm.response.json().access_token);",
+                  "    pm.collectionVariables.set('id_usuario_psicologo', pm.response.json().id_usuario);",
                   "}"
                 ]
               }
@@ -421,6 +450,7 @@
                   "",
                   "if (pm.response.code === 200) {",
                   "    pm.collectionVariables.set('token_admin', pm.response.json().access_token);",
+                  "    pm.collectionVariables.set('id_usuario_admin', pm.response.json().id_usuario);",
                   "}"
                 ]
               }
@@ -1311,7 +1341,7 @@
                   "    const registros = alumnos.map((a, i) => ({ id_alumno: a.id_alumno, estado: i === 0 ? 'T' : 'P' }));",
                   "    pm.collectionVariables.set('registros_asistencia', JSON.stringify(registros));",
                   "    pm.collectionVariables.set('registro_incompleto', JSON.stringify(registros.slice(0, 1)));",
-                  "    const notas = alumnos.map((a, i) => ({ id_alumno: a.id_alumno, valor: 14 + i }));",
+                  "    const notas = alumnos.map((a, i) => ({ id_alumno: a.id_alumno, valor: 12 + (i % 8) }));",
                   "    pm.collectionVariables.set('notas_evaluacion', JSON.stringify(notas));",
                   "    const otro = alumnos.find(a => String(a.id_alumno) !== String(pm.collectionVariables.get('id_alumno')));",
                   "    pm.collectionVariables.set('id_otro_alumno', otro.id_alumno);",
@@ -2865,6 +2895,155 @@
               }
             }
           ]
+        },
+        {
+          "name": "Resumen por fechas (auxiliar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/asistencia/seccion/{{id_seccion}}/resumen?desde=2026-10-01&hasta=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "asistencia",
+                "seccion",
+                "{{id_seccion}}",
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-31"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_auxiliar}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Un resumen por cada alumno de la sección', () => {",
+                  "    const alumnos = pm.response.json().alumnos;",
+                  "    pm.expect(alumnos.length).to.be.above(0);",
+                  "    pm.expect(alumnos[0]).to.have.property('porcentaje');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen sin fechas (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/asistencia/seccion/{{id_seccion}}/resumen",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "asistencia",
+                "seccion",
+                "{{id_seccion}}",
+                "resumen"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_auxiliar}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen con desde > hasta (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/asistencia/seccion/{{id_seccion}}/resumen?desde=2026-10-31&hasta=2026-10-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "asistencia",
+                "seccion",
+                "{{id_seccion}}",
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-10-31"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-01"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_auxiliar}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -4068,6 +4247,1579 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de un alumno (psicóloga)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/citas/alumno/{{id_alumno}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "citas",
+                "alumno",
+                "{{id_alumno}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_psicologo}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Incluye la observación de la psicóloga', () => {",
+                  "    const citas = pm.response.json().citas;",
+                  "    pm.expect(citas.length).to.be.above(0);",
+                  "    pm.expect(citas[0]).to.have.property('observacion');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de un alumno (alumna → 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/citas/alumno/{{id_alumno}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "citas",
+                "alumno",
+                "{{id_alumno}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de alumno inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/citas/alumno/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "citas",
+                "alumno",
+                "999999"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_psicologo}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mensajería",
+      "description": "Chat entre dos usuarios. El alumno puede escribir a los docentes de su sección, a los auxiliares y a la psicóloga; el docente, a sus alumnos y al personal.",
+      "item": [
+        {
+          "name": "Mis contactos (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/contactos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "contactos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const docente = pm.response.json().find(c => c.rol === 'DOCENTE');",
+                  "    pm.collectionVariables.set('id_usuario_docente', docente.id_usuario);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis conversaciones (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('id_conversacion', pm.response.json()[0].id_conversacion);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver conversación (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Responder (alumna)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Profesor, ¿la práctica también entra en el examen?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mensaje vacío (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Escribir a la psicóloga (alumna)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": {{id_usuario_psicologo}},\n  \"contenido\": \"Hola, quisiera conversar sobre mis exámenes.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201 o 200', () => pm.expect(pm.response.code).to.be.oneOf([201, 200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Escribir a alguien que no es su contacto (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": {{id_usuario_admin}},\n  \"contenido\": \"Hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Escribir a un usuario inexistente (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": 999999,\n  \"contenido\": \"Hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer una conversación ajena (psicóloga → 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_psicologo}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis conversaciones (docente)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Tiene mensajes sin leer de la alumna', () => {",
+                  "    const c = pm.response.json().find(x => String(x.id_conversacion) === pm.collectionVariables.get('id_conversacion'));",
+                  "    pm.expect(c.no_leidos).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar como leídos (docente)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}/leido",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}",
+                "leido"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Responder (docente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Sí, entra todo el bimestre.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones",
+      "description": "Se crean solas: nueva tarea, calificación, clase virtual, libreta, cita, reporte de conducta y mensaje nuevo.",
+      "item": [
+        {
+          "name": "Mis notificaciones (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('id_notificacion', pm.response.json().notificaciones[0].id_notificacion);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Solo las no leídas (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?solo_no_leidas=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "solo_no_leidas",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Todas están sin leer', () => {",
+                  "    pm.response.json().notificaciones.forEach(n => pm.expect(n.leida).to.eql(0));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar una como leída (alumna)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/{{id_notificacion}}/leida",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "{{id_notificacion}}",
+                "leida"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar la de otro usuario (docente → 403)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/{{id_notificacion}}/leida",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "{{id_notificacion}}",
+                "leida"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notificación inexistente (404)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/999999/leida",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "999999",
+                "leida"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar todas como leídas (alumna)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/leer-todas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "leer-todas"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Panel de inicio",
+      "description": "GET /inicio responde distinto según el rol del token.",
+      "item": [
+        {
+          "name": "Inicio (alumna)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Trae tareas, notas y asistencia', () => {",
+                  "    const p = pm.response.json();",
+                  "    pm.expect(p.rol).to.eql('ALUMNO');",
+                  "    pm.expect(p).to.have.property('proximas_tareas');",
+                  "    pm.expect(p).to.have.property('asistencia');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inicio (docente)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Trae las entregas por calificar', () => pm.expect(pm.response.json()).to.have.property('entregas_por_calificar'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inicio (auxiliar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_auxiliar}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inicio (psicóloga)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_psicologo}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inicio (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inicio sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inicio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inicio"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sin conexión (offline)",
+      "description": "La app manda cada operación con un id único en la cabecera X-Id-Operacion. Si la reenvía (por ejemplo, porque se cortó la red), la API devuelve la misma respuesta sin volver a ejecutarla.",
+      "item": [
+        {
+          "name": "Enviar mensaje con id de operación (1.ª vez)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Id-Operacion",
+                "value": "{{id_operacion}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Mensaje escrito sin conexión.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Un id nuevo en cada ejecución (en la app sería un UUID).",
+                  "pm.collectionVariables.set('id_operacion', 'op-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('id_mensaje_offline', pm.response.json().id_mensaje);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reintento con el mismo id (no se duplica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Id-Operacion",
+                "value": "{{id_operacion}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Mensaje escrito sin conexión.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test('Es la misma respuesta (mismo id_mensaje)', () => {",
+                  "    pm.expect(pm.response.headers.get('X-Operacion-Repetida')).to.eql('true');",
+                  "    pm.expect(String(pm.response.json().id_mensaje)).to.eql(pm.collectionVariables.get('id_mensaje_offline'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar la operación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/offline/operaciones/{{id_operacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "offline",
+                "operaciones",
+                "{{id_operacion}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Operación de otra alumna (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/offline/operaciones/demo-offline-sofia-0001",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "offline",
+                "operaciones",
+                "demo-offline-sofia-0001"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mismo id con otro usuario (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Id-Operacion",
+                "value": "{{id_operacion}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Id de operación inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Id-Operacion",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mensajes/conversaciones/{{id_conversacion}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mensajes",
+                "conversaciones",
+                "{{id_conversacion}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"Hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Operación que no existe (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/offline/operaciones/no-existe-123456",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "offline",
+                "operaciones",
+                "no-existe-123456"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
                 ]
               }
             }

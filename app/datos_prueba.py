@@ -15,13 +15,17 @@ Usuarios de prueba (contraseña = su DNI, como en el colegio):
     ALU-44444444  Mateo   alumno    → 1ro A ┘ la misma mamá (Rosa)
     ALU-71111111  Sofía   alumna    → 3ro A
     ALU-72222222  Diego   alumno    → 3ro A
+    ALU-73333333 / 74444444 / 75555555 / 76666666 / 79999999
+                  Valeria, Andrés, Camila, Joaquín y Renata → 3ro A (3ro A tiene 8 alumnos)
 
 Datos académicos: año 2026 con 4 bimestres; secciones 1ro A, 3ro A y 3ro B de
 Secundaria; horario, material, una clase virtual, asistencia de 3 fechas, 2 reportes
 de conducta, 2 citas (atendida y pendiente) y NOTAS de 3ro A en Matemática y
 Comunicación: bimestres 1 y 2 CERRADOS (ya están en la libreta) y bimestre 3 ABIERTO.
 TAREAS en Matemática de 3ro A: una vencida (Lucía entregó a tiempo y está calificada,
-Sofía entregó tarde y falta calificar, Diego no entregó) y otra con fecha futura.
+Sofía entregó tarde y falta calificar, el resto no entregó) y otra con fecha futura.
+MENSAJES: una conversación entre Lucía y el profesor Carlos (el último mensaje, sin leer).
+NOTIFICACIONES de ejemplo y una OPERACIÓN SIN CONEXIÓN ya sincronizada (la entrega de Sofía).
 
 PRIMER INGRESO: Mateo tiene `debe_cambiar_password = 1` (aún usa su DNI y la app
 le obliga a cambiarla). Las demás cuentas están marcadas como si ya la hubieran
@@ -77,6 +81,9 @@ def cargar_datos_prueba() -> list[str]:
         creados += _asistencia()
         creados += _notas()
         creados += _tareas()
+        creados += _mensajes()
+        creados += _notificaciones()
+        creados += _operacion_offline()
         db.commit()
         return creados
     except Exception:
@@ -169,7 +176,16 @@ _CUENTAS = [
     ("ALU-44444444", "ALUMNO", "Mateo", "Quispe Flores", "alumno", {"genero": "M"}),
     ("ALU-71111111", "ALUMNO", "Sofía", "Ramírez Torres", "alumno", {"genero": "F"}),
     ("ALU-72222222", "ALUMNO", "Diego", "Castillo León", "alumno", {"genero": "M"}),
+    ("ALU-73333333", "ALUMNO", "Valeria", "Huamán Rojas", "alumno", {"genero": "F"}),
+    ("ALU-74444444", "ALUMNO", "Andrés", "Paredes Silva", "alumno", {"genero": "M"}),
+    ("ALU-75555555", "ALUMNO", "Camila", "Soto Medina", "alumno", {"genero": "F"}),
+    ("ALU-76666666", "ALUMNO", "Joaquín", "Vargas Ríos", "alumno", {"genero": "M"}),
+    ("ALU-79999999", "ALUMNO", "Renata", "Flores Cárdenas", "alumno", {"genero": "F"}),
 ]
+
+# Los 8 alumnos de 3ro A (la sección de la demostración).
+ALUMNOS_3RO_A = ["ALU-33333333", "ALU-71111111", "ALU-72222222", "ALU-73333333",
+                 "ALU-74444444", "ALU-75555555", "ALU-76666666", "ALU-79999999"]
 
 
 def _familiar_rosa() -> int:
@@ -276,8 +292,8 @@ def _academico() -> list[str]:
 
 def _matriculas() -> list[str]:
     creadas = []
-    en_seccion = {"ALU-33333333": ("3ro", "A"), "ALU-44444444": ("1ro", "A"),
-                  "ALU-71111111": ("3ro", "A"), "ALU-72222222": ("3ro", "A")}
+    en_seccion = {"ALU-33333333": ("3ro", "A"), "ALU-44444444": ("1ro", "A")}   # Lucía y Mateo
+    en_seccion.update({username: ("3ro", "A") for username in ALUMNOS_3RO_A[1:]})
     for username, (grado, seccion) in en_seccion.items():
         id_alumno = _id_alumno(username)
         if _id("SELECT id_matricula FROM matricula WHERE id_alumno = %s AND id_anio_escolar = %s",
@@ -402,14 +418,15 @@ def _clases_virtuales() -> list[str]:
 def _asistencia() -> list[str]:
     if not _tabla_vacia("asistencia"):
         return []
-    # 3 fechas en 3ro A, con faltas y tardanzas.
+    # 3 fechas en 3ro A, con faltas y tardanzas. Cada texto tiene el estado de los 8
+    # alumnos en el orden de ALUMNOS_3RO_A (Lucía, Sofía, Diego, Valeria, Andrés...).
     estados = {
-        "2026-10-05": {"ALU-33333333": "P", "ALU-71111111": "P", "ALU-72222222": "T"},
-        "2026-10-06": {"ALU-33333333": "F", "ALU-71111111": "P", "ALU-72222222": "P"},
-        "2026-10-07": {"ALU-33333333": "P", "ALU-71111111": "J", "ALU-72222222": "P"},
+        "2026-10-05": "PPTPPPFP",
+        "2026-10-06": "FPPPTPPP",
+        "2026-10-07": "PJPPPPFP",
     }
-    for dia, por_alumno in estados.items():
-        for username, estado in por_alumno.items():
+    for dia, letras in estados.items():
+        for username, estado in zip(ALUMNOS_3RO_A, letras):
             id_matricula = _id("SELECT id_matricula FROM matricula WHERE id_alumno = %s AND id_anio_escolar = %s",
                                (_id_alumno(username), ANIO))
             insertar("INSERT INTO asistencia (id_matricula, fecha, estado) VALUES (%s, %s, %s)",
@@ -424,7 +441,8 @@ def _notas() -> list[str]:
     por bimestre en los bimestres 1, 2 y 3. Se cierran el 1 y el 2; el 3 queda abierto."""
     if not _tabla_vacia("nota"):
         return []
-    base = {"ALU-33333333": 16, "ALU-71111111": 13, "ALU-72222222": 10}   # nivel de cada alumno
+    # Nivel de cada alumno (su nota base): Lucía 16, Sofía 13, Diego 10, Valeria 18...
+    base = dict(zip(ALUMNOS_3RO_A, (16, 13, 10, 18, 12, 15, 9, 14)))
     cursos = {"Matemática": ("DOC-22222222", 0), "Comunicación": ("DOC-66666666", -1)}
     evaluaciones = {"Práctica 1": 0, "Examen": 1}
 
@@ -477,3 +495,73 @@ def _tareas() -> list[str]:
         VALUES (%s, %s, 'https://drive.google.com/sofia-ecuaciones', '2026-10-06 10:15:00')
     """, (vencida, _id_alumno("ALU-71111111")))
     return ["2 tareas (una con entrega calificada)"]
+
+
+# --- 11. Mensajes ------------------------------------------------------------------
+
+def _mensajes() -> list[str]:
+    """Una conversación entre Lucía y el profesor Carlos. El último mensaje
+    (de Lucía) está sin leer: Carlos lo ve como pendiente."""
+    if not _tabla_vacia("conversacion"):
+        return []
+    lucia, carlos = _id_usuario("ALU-33333333"), _id_usuario("DOC-22222222")
+    mensajes = [   # (remitente, contenido, fecha, leído)
+        (lucia, "Profesor, ¿el ejercicio 8 de la tarea se resuelve por sustitución?", "2026-10-04 18:05:00", 1),
+        (carlos, "Sí, Lucía. Despeja x en la primera ecuación y reemplázala en la segunda.", "2026-10-04 18:40:00", 1),
+        (lucia, "Gracias, profesor. Ya me salió.", "2026-10-04 19:10:00", 0),
+    ]
+    id_conversacion = insertar("""
+        INSERT INTO conversacion (usuario1_id, usuario2_id, ultimo_mensaje, fecha_actualizacion)
+        VALUES (%s, %s, %s, %s)
+    """, (min(lucia, carlos), max(lucia, carlos), mensajes[-1][1], mensajes[-1][2]))
+    for remitente, contenido, fecha, leido in mensajes:
+        insertar("""INSERT INTO mensaje (id_conversacion, remitente_id, contenido, leido, fecha_envio)
+                    VALUES (%s, %s, %s, %s, %s)""", (id_conversacion, remitente, contenido, leido, fecha))
+    return ["1 conversación con 3 mensajes"]
+
+
+# --- 12. Notificaciones ---------------------------------------------------------------
+
+def _notificaciones() -> list[str]:
+    """Algunas notificaciones de ejemplo (en la app real las crean los services)."""
+    if not _tabla_vacia("notificacion"):
+        return []
+    tarea_vencida = _id("SELECT id_tarea FROM tarea WHERE titulo = 'Ejercicios de ecuaciones'")
+    proyecto = _id("SELECT id_tarea FROM tarea WHERE titulo = 'Proyecto: sistemas de ecuaciones'")
+    conversacion = _id("SELECT MIN(id_conversacion) FROM conversacion")
+    reporte = _id("SELECT MAX(id_reporte) FROM reporte_conducta")
+    avisos = [   # (usuario, tipo, título, mensaje, referencia, leída, fecha)
+        ("ALU-33333333", "CONDUCTA", "Nuevo reporte de conducta",
+         "No portar el uniforme completo (−2 puntos)", reporte, 1, "2026-10-02 08:00:00"),
+        ("ALU-33333333", "CALIFICACION", "Tu tarea fue calificada",
+         "Ejercicios de ecuaciones: 17", tarea_vencida, 1, "2026-10-06 09:00:00"),
+        ("DOC-22222222", "MENSAJE", "Mensaje de Lucía Quispe Flores",
+         "Gracias, profesor. Ya me salió.", conversacion, 0, "2026-10-04 19:10:00"),
+    ]
+    # La tarea del proyecto se avisó a toda la sección.
+    avisos += [(username, "TAREA", "Nueva tarea de Matemática",
+                "Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59", proyecto, 0,
+                "2026-10-13 08:00:00") for username in ALUMNOS_3RO_A]
+    for username, tipo, titulo, mensaje, referencia, leida, fecha in avisos:
+        insertar("""
+            INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, id_referencia, leida, fecha)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (_id_usuario(username), tipo, titulo, mensaje, referencia, leida, fecha))
+    return [f"{len(avisos)} notificaciones"]
+
+
+# --- 13. Operación hecha sin conexión ------------------------------------------------
+
+def _operacion_offline() -> list[str]:
+    """Sofía entregó la tarea sin internet; la app la envió al volver la conexión
+    con el id "demo-offline-sofia-0001". Si el celular la reenvía, la API responde
+    lo mismo sin duplicar la entrega (ver app/offline.py)."""
+    if not _tabla_vacia("operacion_offline"):
+        return []
+    tarea = _id("SELECT id_tarea FROM tarea WHERE titulo = 'Ejercicios de ecuaciones'")
+    insertar("""
+        INSERT INTO operacion_offline (id_operacion, id_usuario, metodo, ruta, codigo, respuesta, fecha)
+        VALUES ('demo-offline-sofia-0001', %s, 'POST', %s, 201, %s, '2026-10-06 10:15:05')
+    """, (_id_usuario("ALU-71111111"), f"/tareas/item/{tarea}/entregar",
+          '{"fuera_de_plazo":true,"message":"Tarea entregada"}'))
+    return ["1 operación sin conexión"]

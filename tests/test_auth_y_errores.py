@@ -17,9 +17,10 @@ os.environ.setdefault("ENTORNO", "desarrollo")
 import jwt  # noqa: E402
 from flask import Flask, jsonify  # noqa: E402
 
-from app import config  # noqa: E402
+from app import config, push  # noqa: E402
 from app.auth import crear_token, exigir_dueno_o_roles, jwt_required, usuario_actual  # noqa: E402
 from app.errors import ApiError, registrar_errores  # noqa: E402
+from app.services import offline_service  # noqa: E402
 from app.utils import ProveedorJSON, enlace, entero, extraer_dni, fecha, fecha_hora, hora_texto, lista, numero, texto  # noqa: E402
 
 
@@ -214,6 +215,31 @@ class PruebasUtilidades(unittest.TestCase):
             self.assertEqual(e.exception.status, 400)
         with self.assertRaises(ApiError):
             lista({"l": [1, 2, 3]}, "l", maximo=2)               # demasiados elementos
+
+
+class PruebasOfflineYPush(unittest.TestCase):
+    """Partes de la idempotencia y del push que no necesitan la base de datos."""
+
+    def test_formato_del_id_de_operacion(self):
+        for bueno in ("op-1730000000000", "550e8400-e29b-41d4-a716-446655440000", "demo_offline_1"):
+            self.assertEqual(offline_service.validar_id(bueno), bueno)
+        for malo in ("abc", "x" * 65, "op con espacios", "op;DROP TABLE"):
+            with self.assertRaises(ApiError) as e:               # muy corto, muy largo o caracteres raros
+                offline_service.validar_id(malo)
+            self.assertEqual(e.exception.status, 400)
+
+    def test_push_solo_a_tokens_de_expo(self):
+        tokens = ["ExponentPushToken[abc123]", "token-de-otro-servicio", "ExpoPushToken[xyz]"]
+        mensajes = push.armar_mensajes(tokens, "Nueva tarea", "Matemática", {"tipo": "TAREA"})
+        self.assertEqual([m["to"] for m in mensajes], ["ExponentPushToken[abc123]", "ExpoPushToken[xyz]"])
+        self.assertEqual(mensajes[0]["title"], "Nueva tarea")
+
+    def test_push_apagado_no_envia_nada(self):
+        anterior, config.PUSH_ACTIVO = config.PUSH_ACTIVO, False
+        try:
+            self.assertEqual(push.enviar(["ExponentPushToken[abc]"], "t", "m"), 0)
+        finally:
+            config.PUSH_ACTIVO = anterior
 
 
 if __name__ == "__main__":

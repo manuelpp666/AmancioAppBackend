@@ -15,6 +15,7 @@ JSON:
 from flask import Blueprint, jsonify
 
 from app.auth import jwt_required, usuario_actual
+from app.offline import idempotente
 from app.services import tarea_service
 from app.utils import json_requerido
 
@@ -41,6 +42,7 @@ def eliminar(id_tarea):
 
 @bp.post("/item/<int:id_tarea>/entregar")
 @jwt_required("ALUMNO")
+@idempotente
 def entregar(id_tarea):
     respuesta, codigo = tarea_service.entregar(usuario_actual(), id_tarea, json_requerido())
     return jsonify(respuesta), codigo

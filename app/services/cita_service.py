@@ -15,6 +15,7 @@ from datetime import date, datetime
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import cita_repository, perfil_repository
+from app.services import notificacion_service
 from app.utils import fecha_hora, texto
 
 
@@ -88,11 +89,14 @@ def programar(usuario: dict, id_cita: int, datos: dict) -> dict:
     db = get_db()
     try:
         cita_repository.programar(id_cita, fecha_cita, psicologo["id_psicologo"])
+        accion = "reprogramada" if cita["estado"] == "PROGRAMADA" else "programada"
+        notificacion_service.notificar_alumno(
+            cita["id_alumno"], "CITA", f"Cita {accion}",
+            f"Tu cita con psicología es el {fecha_cita:%d/%m a las %H:%M}", id_cita)
         db.commit()
     except Exception:
         db.rollback()
         raise
-    accion = "reprogramada" if cita["estado"] == "PROGRAMADA" else "programada"
     return {"message": f"Cita {accion}", "fecha_cita": fecha_cita}
 
 
@@ -119,8 +123,20 @@ def cancelar(id_cita: int, datos: dict) -> dict:
     db = get_db()
     try:
         cita_repository.cancelar(id_cita, motivo)
+        notificacion_service.notificar_alumno(cita["id_alumno"], "CITA", "Cita cancelada", motivo, id_cita)
         db.commit()
     except Exception:
         db.rollback()
         raise
     return {"message": "Cita cancelada"}
+
+
+def historial_de_alumno(id_alumno: int) -> dict:
+    """Para el psicólogo: todas las citas de un alumno, con sus observaciones."""
+    alumno = perfil_repository.alumno_por_id(id_alumno)
+    if alumno is None:
+        raise ApiError(404, "Alumno no encontrado")
+    citas = cita_repository.historial_completo(id_alumno)
+    atendidas = sum(1 for c in citas if c["estado"] == "ATENDIDA")
+    return {"alumno": f"{alumno['nombres']} {alumno['apellidos']}",
+            "total": len(citas), "atendidas": atendidas, "citas": citas}

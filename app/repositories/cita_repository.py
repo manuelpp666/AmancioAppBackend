@@ -88,3 +88,22 @@ def cancelar(id_cita: int, motivo: str) -> int:
         SET estado = 'CANCELADA', motivo_cancelacion = %s
         WHERE id_cita = %s
     """, (motivo, id_cita))
+
+
+def activa_de_alumno(id_alumno: int):
+    """La cita sin terminar del alumno (PENDIENTE o PROGRAMADA), o None."""
+    return consultar_uno("""
+        SELECT id_cita, motivo, fecha_cita, estado
+        FROM cita_psicologia
+        WHERE id_alumno = %s AND estado IN ('PENDIENTE', 'PROGRAMADA')
+        ORDER BY fecha_solicitud DESC
+        LIMIT 1
+    """, (id_alumno,))
+
+
+def historial_completo(id_alumno: int) -> list:
+    """Todas las citas del alumno CON la observación (solo para el psicólogo)."""
+    return consultar_todos(_SELECT_AGENDA + """
+        WHERE c.id_alumno = %s
+        ORDER BY c.fecha_solicitud DESC
+    """, (id_alumno,))

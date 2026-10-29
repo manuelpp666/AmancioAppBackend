@@ -16,7 +16,7 @@ from datetime import datetime
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import perfil_repository, tarea_repository
-from app.services import cursos_service, perfil_service
+from app.services import cursos_service, notificacion_service, perfil_service
 from app.utils import enlace, entero, fecha_hora, numero, texto
 
 NOTA_MAXIMA = 20
@@ -79,6 +79,9 @@ def publicar(usuario: dict, id_carga: int, datos: dict) -> dict:
     try:
         id_tarea = tarea_repository.crear(id_carga, titulo, descripcion, fecha_entrega,
                                           bimestre, archivo_url)
+        notificacion_service.notificar_seccion(
+            carga, "TAREA", f"Nueva tarea de {carga['curso']}",
+            f"{titulo} · entrega hasta el {fecha_entrega:%d/%m %H:%M}", id_tarea)
         db.commit()
     except Exception:
         db.rollback()
@@ -168,6 +171,9 @@ def calificar(usuario: dict, id_entrega: int, datos: dict) -> dict:
     db = get_db()
     try:
         tarea_repository.calificar(id_entrega, calificacion, observacion)
+        notificacion_service.notificar_alumno(
+            entrega["id_alumno"], "CALIFICACION", "Tu tarea fue calificada",
+            f"{tarea['titulo']}: {calificacion:g}", tarea["id_tarea"])
         db.commit()
     except Exception:
         db.rollback()

@@ -12,6 +12,7 @@ JSON de POST /reportes:
 from flask import Blueprint, jsonify
 
 from app.auth import jwt_required, usuario_actual
+from app.offline import idempotente
 from app.services import conducta_service
 from app.utils import json_requerido
 
@@ -26,6 +27,7 @@ def faltas():
 
 @bp.post("/reportes")
 @jwt_required("AUXILIAR")
+@idempotente
 def registrar_reporte():
     return jsonify(conducta_service.registrar_reporte(usuario_actual(), json_requerido())), 201
 

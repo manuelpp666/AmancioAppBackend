@@ -16,6 +16,7 @@ JSON de /cerrar-bimestre:  {"bimestre": 3}
 from flask import Blueprint, jsonify, request
 
 from app.auth import jwt_required, usuario_actual
+from app.offline import idempotente
 from app.services import nota_service
 from app.utils import json_requerido
 
@@ -31,6 +32,7 @@ def notas_del_curso(id_carga):
 
 @bp.post("/<int:id_carga>")
 @jwt_required("DOCENTE")
+@idempotente
 def registrar_notas(id_carga):
     return jsonify(nota_service.registrar_notas(usuario_actual(), id_carga, json_requerido())), 201
 

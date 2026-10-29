@@ -10,7 +10,7 @@ from datetime import date, datetime
 from app.database import get_db
 from app.errors import ApiError
 from app.repositories import academico_repository, conducta_repository, perfil_repository
-from app.services import academico_service
+from app.services import academico_service, notificacion_service
 from app.utils import enlace, entero, fecha, texto
 
 NOTA_MAXIMA = 20
@@ -32,7 +32,8 @@ def registrar_reporte(usuario: dict, datos: dict) -> dict:
 
     if perfil_repository.alumno_por_id(id_alumno) is None:
         raise ApiError(404, "Alumno no encontrado")
-    if conducta_repository.falta_por_id(id_falta) is None:
+    falta = conducta_repository.falta_por_id(id_falta)
+    if falta is None:
         raise ApiError(404, "Falta no encontrada en el catálogo")
 
     # Se guarda la fecha indicada con la hora actual.
@@ -42,6 +43,9 @@ def registrar_reporte(usuario: dict, datos: dict) -> dict:
     try:
         id_reporte = conducta_repository.crear_reporte(id_alumno, id_falta, usuario["id"],
                                                        fecha_reporte, descripcion, evidencia_url)
+        notificacion_service.notificar_alumno(
+            id_alumno, "CONDUCTA", "Nuevo reporte de conducta",
+            f"{falta['nombre']} (−{falta['puntos']} puntos)", id_reporte)
         db.commit()
     except Exception:
         db.rollback()
