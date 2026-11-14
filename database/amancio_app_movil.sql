@@ -103,7 +103,7 @@ CREATE TABLE `alumno` (
 
 LOCK TABLES `alumno` WRITE;
 /*!40000 ALTER TABLE `alumno` DISABLE KEYS */;
-INSERT INTO `alumno` VALUES (1,6,'33333333','Lucía','Quispe Flores',NULL,'F','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,1,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,1),(2,7,'44444444','Mateo','Quispe Flores',NULL,'M','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,1,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,1),(3,8,'71111111','Sofía','Ramírez Torres',NULL,'F','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(4,9,'72222222','Diego','Castillo León',NULL,'M','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(5,10,'73333333','Valeria','Huamán Rojas',NULL,'F','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(6,11,'74444444','Andrés','Paredes Silva',NULL,'M','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(7,12,'75555555','Camila','Soto Medina',NULL,'F','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(8,13,'76666666','Joaquín','Vargas Ríos',NULL,'M','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL),(9,14,'79999999','Renata','Flores Cárdenas',NULL,'F','Av. Los Próceres 123, Lima',NULL,NULL,NULL,NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `alumno` VALUES (1,6,'33333333','Lucía','Quispe Flores','2011-05-14','F','Av. Los Próceres 123, Lima','Asma leve (usa inhalador)','M','I.E. Santa Rosa',NULL,1,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,1),(2,7,'44444444','Mateo','Quispe Flores','2013-08-02','M','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,1,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,1),(3,8,'71111111','Sofía','Ramírez Torres','2011-02-27','F','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,2),(4,9,'72222222','Diego','Castillo León','2011-11-09','M','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,3),(5,10,'73333333','Valeria','Huamán Rojas','2011-07-19','F','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,4),(6,11,'74444444','Andrés','Paredes Silva','2011-03-30','M','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,5),(7,12,'75555555','Camila','Soto Medina','2011-09-05','F','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,6),(8,13,'76666666','Joaquín','Vargas Ríos','2011-12-12','M','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,7),(9,14,'79999999','Renata','Flores Cárdenas','2011-06-21','F','Av. Los Próceres 123, Lima',NULL,'M','I.E. Santa Rosa',NULL,0,'ESTUDIANTE',NULL,NULL,NULL,NULL,NULL,8);
 /*!40000 ALTER TABLE `alumno` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -178,7 +178,7 @@ CREATE TABLE `asistencia` (
   PRIMARY KEY (`id_asistencia`),
   KEY `id_matricula` (`id_matricula`),
   CONSTRAINT `asistencia_ibfk_1` FOREIGN KEY (`id_matricula`) REFERENCES `matricula` (`id_matricula`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -187,7 +187,7 @@ CREATE TABLE `asistencia` (
 
 LOCK TABLES `asistencia` WRITE;
 /*!40000 ALTER TABLE `asistencia` DISABLE KEYS */;
-INSERT INTO `asistencia` VALUES (1,1,'2026-10-05','P',NULL),(2,3,'2026-10-05','P',NULL),(3,4,'2026-10-05','T',NULL),(4,5,'2026-10-05','P',NULL),(5,6,'2026-10-05','P',NULL),(6,7,'2026-10-05','P',NULL),(7,8,'2026-10-05','F',NULL),(8,9,'2026-10-05','P',NULL),(9,1,'2026-10-06','F',NULL),(10,3,'2026-10-06','P',NULL),(11,4,'2026-10-06','P',NULL),(12,5,'2026-10-06','P',NULL),(13,6,'2026-10-06','T',NULL),(14,7,'2026-10-06','P',NULL),(15,8,'2026-10-06','P',NULL),(16,9,'2026-10-06','P',NULL),(17,1,'2026-10-07','P',NULL),(18,3,'2026-10-07','J',NULL),(19,4,'2026-10-07','P',NULL),(20,5,'2026-10-07','P',NULL),(21,6,'2026-10-07','P',NULL),(22,7,'2026-10-07','P',NULL),(23,8,'2026-10-07','F',NULL),(24,9,'2026-10-07','P',NULL);
+INSERT INTO `asistencia` VALUES (1,1,'2026-10-05','P',NULL),(2,3,'2026-10-05','P',NULL),(3,4,'2026-10-05','T',NULL),(4,5,'2026-10-05','P',NULL),(5,6,'2026-10-05','P',NULL),(6,7,'2026-10-05','P',NULL),(7,8,'2026-10-05','F',NULL),(8,9,'2026-10-05','P',NULL),(9,1,'2026-10-06','F',NULL),(10,3,'2026-10-06','P',NULL),(11,4,'2026-10-06','P',NULL),(12,5,'2026-10-06','P',NULL),(13,6,'2026-10-06','T',NULL),(14,7,'2026-10-06','P',NULL),(15,8,'2026-10-06','P',NULL),(16,9,'2026-10-06','P',NULL),(17,1,'2026-10-07','P',NULL),(18,3,'2026-10-07','J',NULL),(19,4,'2026-10-07','P',NULL),(20,5,'2026-10-07','P',NULL),(21,6,'2026-10-07','P',NULL),(22,7,'2026-10-07','P',NULL),(23,8,'2026-10-07','F',NULL),(24,9,'2026-10-07','P',NULL),(25,1,'2026-11-04','P',NULL),(26,3,'2026-11-04','P',NULL),(27,4,'2026-11-04','P',NULL),(28,5,'2026-11-04','P',NULL),(29,6,'2026-11-04','P',NULL),(30,7,'2026-11-04','P',NULL),(31,8,'2026-11-04','P',NULL),(32,9,'2026-11-04','P',NULL),(33,2,'2026-11-04','P',NULL),(34,1,'2026-11-05','P',NULL),(35,3,'2026-11-05','T',NULL),(36,4,'2026-11-05','P',NULL),(37,5,'2026-11-05','P',NULL),(38,6,'2026-11-05','P',NULL),(39,7,'2026-11-05','P',NULL),(40,8,'2026-11-05','P',NULL),(41,9,'2026-11-05','F',NULL),(42,2,'2026-11-05','P',NULL),(43,1,'2026-11-06','P',NULL),(44,3,'2026-11-06','P',NULL),(45,4,'2026-11-06','F',NULL),(46,5,'2026-11-06','P',NULL),(47,6,'2026-11-06','P',NULL),(48,7,'2026-11-06','P',NULL),(49,8,'2026-11-06','P',NULL),(50,9,'2026-11-06','P',NULL),(51,2,'2026-11-06','T',NULL),(52,1,'2026-11-09','P',NULL),(53,3,'2026-11-09','P',NULL),(54,4,'2026-11-09','P',NULL),(55,5,'2026-11-09','T',NULL),(56,6,'2026-11-09','P',NULL),(57,7,'2026-11-09','P',NULL),(58,8,'2026-11-09','P',NULL),(59,9,'2026-11-09','P',NULL),(60,2,'2026-11-09','P',NULL),(61,1,'2026-11-10','P',NULL),(62,3,'2026-11-10','P',NULL),(63,4,'2026-11-10','P',NULL),(64,5,'2026-11-10','P',NULL),(65,6,'2026-11-10','P',NULL),(66,7,'2026-11-10','J',NULL),(67,8,'2026-11-10','P',NULL),(68,9,'2026-11-10','P',NULL),(69,2,'2026-11-10','P',NULL),(70,1,'2026-11-11','T',NULL),(71,3,'2026-11-11','P',NULL),(72,4,'2026-11-11','P',NULL),(73,5,'2026-11-11','P',NULL),(74,6,'2026-11-11','F',NULL),(75,7,'2026-11-11','P',NULL),(76,8,'2026-11-11','P',NULL),(77,9,'2026-11-11','P',NULL),(78,2,'2026-11-11','P',NULL),(79,1,'2026-11-12','P',NULL),(80,3,'2026-11-12','P',NULL),(81,4,'2026-11-12','P',NULL),(82,5,'2026-11-12','P',NULL),(83,6,'2026-11-12','P',NULL),(84,7,'2026-11-12','P',NULL),(85,8,'2026-11-12','T',NULL),(86,9,'2026-11-12','P',NULL),(87,2,'2026-11-12','P',NULL),(88,1,'2026-11-13','P',NULL),(89,3,'2026-11-13','P',NULL),(90,4,'2026-11-13','F',NULL),(91,5,'2026-11-13','P',NULL),(92,6,'2026-11-13','P',NULL),(93,7,'2026-11-13','P',NULL),(94,8,'2026-11-13','P',NULL),(95,9,'2026-11-13','P',NULL),(96,2,'2026-11-13','P',NULL);
 /*!40000 ALTER TABLE `asistencia` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -306,7 +306,7 @@ CREATE TABLE `cierre_bimestre` (
   CONSTRAINT `cierre_bimestre_ibfk_1` FOREIGN KEY (`id_carga_academica`) REFERENCES `carga_academica` (`id_carga_academica`),
   CONSTRAINT `cierre_bimestre_ibfk_2` FOREIGN KEY (`cerrado_por`) REFERENCES `usuario` (`id_usuario`),
   CONSTRAINT `chk_cierre_bimestre` CHECK (`bimestre` between 1 and 4)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -315,7 +315,7 @@ CREATE TABLE `cierre_bimestre` (
 
 LOCK TABLES `cierre_bimestre` WRITE;
 /*!40000 ALTER TABLE `cierre_bimestre` DISABLE KEYS */;
-INSERT INTO `cierre_bimestre` VALUES (1,4,1,2,'2026-10-29 00:32:04'),(2,4,2,2,'2026-10-29 00:32:04'),(3,5,1,3,'2026-10-29 00:32:04'),(4,5,2,3,'2026-10-29 00:32:04');
+INSERT INTO `cierre_bimestre` VALUES (1,4,1,2,'2026-11-14 10:38:11'),(2,4,2,2,'2026-11-14 10:38:11'),(3,5,1,3,'2026-11-14 10:38:11'),(4,5,2,3,'2026-11-14 10:38:11'),(5,6,1,3,'2026-11-14 10:38:11'),(6,6,2,3,'2026-11-14 10:38:11'),(7,1,1,2,'2026-11-14 10:38:11'),(8,1,2,2,'2026-11-14 10:38:11'),(9,2,1,3,'2026-11-14 10:38:11'),(10,2,2,3,'2026-11-14 10:38:11'),(11,3,1,3,'2026-11-14 10:38:11'),(12,3,2,3,'2026-11-14 10:38:11');
 /*!40000 ALTER TABLE `cierre_bimestre` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -342,7 +342,7 @@ CREATE TABLE `cita_psicologia` (
   KEY `id_psicologo` (`id_psicologo`),
   CONSTRAINT `cita_psicologia_ibfk_1` FOREIGN KEY (`id_alumno`) REFERENCES `alumno` (`id_alumno`),
   CONSTRAINT `cita_psicologia_ibfk_2` FOREIGN KEY (`id_psicologo`) REFERENCES `psicologo` (`id_psicologo`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -351,7 +351,7 @@ CREATE TABLE `cita_psicologia` (
 
 LOCK TABLES `cita_psicologia` WRITE;
 /*!40000 ALTER TABLE `cita_psicologia` DISABLE KEYS */;
-INSERT INTO `cita_psicologia` VALUES (1,1,1,'Me cuesta concentrarme en clase','Mañanas','2026-10-01 10:00:00','ATENDIDA','Se recomienda organizar horarios de estudio. Seguimiento en un mes.',NULL,'2026-09-25 08:00:00'),(2,2,NULL,'Quiero conversar sobre problemas con mis compañeros','Martes o jueves',NULL,'PENDIENTE',NULL,NULL,'2026-10-29 00:32:04');
+INSERT INTO `cita_psicologia` VALUES (1,1,1,'Me cuesta concentrarme en clase','Mañanas','2026-10-01 10:00:00','ATENDIDA','Se recomienda organizar horarios de estudio. Seguimiento en un mes.',NULL,'2026-09-25 08:00:00'),(2,2,NULL,'Quiero conversar sobre problemas con mis compañeros','Martes o jueves',NULL,'PENDIENTE',NULL,NULL,'2026-11-14 10:38:11'),(3,3,1,'Me cuesta llegar temprano porque cuido a mi hermano','Mañanas','2026-11-14 11:30:00','PROGRAMADA',NULL,NULL,'2026-11-11 08:30:00'),(4,4,1,'Tuve un problema con un compañero y quiero arreglarlo','Después del recreo','2026-11-16 10:00:00','PROGRAMADA',NULL,NULL,'2026-11-12 08:30:00'),(5,5,NULL,'Me siento muy estresada por los exámenes','Viernes por la tarde',NULL,'PENDIENTE',NULL,NULL,'2026-11-13 08:30:00'),(6,8,1,'Quiero orientación para organizar mis tareas','Lunes','2026-11-10 09:00:00','CANCELADA',NULL,'El estudiante viajó con su familia; se reprogramará a su regreso.','2026-11-05 08:30:00'),(7,1,1,'Seguimiento de concentración en clase','Mañanas','2026-11-03 10:00:00','ATENDIDA','Mejoró su organización y mantiene su horario de estudio. Nuevo seguimiento en diciembre.',NULL,'2026-10-31 08:30:00');
 /*!40000 ALTER TABLE `cita_psicologia` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -372,7 +372,7 @@ CREATE TABLE `clase_virtual` (
   PRIMARY KEY (`id_clase_virtual`),
   KEY `id_carga_academica` (`id_carga_academica`),
   CONSTRAINT `clase_virtual_ibfk_1` FOREIGN KEY (`id_carga_academica`) REFERENCES `carga_academica` (`id_carga_academica`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -381,7 +381,7 @@ CREATE TABLE `clase_virtual` (
 
 LOCK TABLES `clase_virtual` WRITE;
 /*!40000 ALTER TABLE `clase_virtual` DISABLE KEYS */;
-INSERT INTO `clase_virtual` VALUES (1,4,'Repaso para el examen bimestral','2026-10-20 16:00:00','https://meet.google.com/abc-defg-hij','2026-10-29 00:32:04');
+INSERT INTO `clase_virtual` VALUES (1,4,'Repaso para el examen bimestral','2026-10-20 16:00:00','https://meet.google.com/abc-defg-hij','2026-11-14 10:38:11'),(2,4,'Funciones lineales: resolución de dudas','2026-11-15 16:00:00','https://meet.google.com/amv-demo-clase','2026-11-14 10:38:11'),(3,5,'Taller de redacción del ensayo','2026-11-16 15:00:00','https://meet.google.com/amv-demo-clase','2026-11-14 10:38:11'),(4,6,'Laboratorio virtual: densidad','2026-11-18 16:30:00','https://meet.google.com/amv-demo-clase','2026-11-14 10:38:11'),(5,1,'Repaso de fracciones','2026-11-17 15:30:00','https://meet.google.com/amv-demo-clase','2026-11-14 10:38:11'),(6,5,'Análisis de El caballero Carmelo','2026-11-09 15:00:00','https://meet.google.com/amv-demo-clase','2026-11-14 10:38:11');
 /*!40000 ALTER TABLE `clase_virtual` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -403,7 +403,7 @@ CREATE TABLE `conversacion` (
   KEY `usuario2_id` (`usuario2_id`),
   CONSTRAINT `conversacion_ibfk_1` FOREIGN KEY (`usuario1_id`) REFERENCES `usuario` (`id_usuario`),
   CONSTRAINT `conversacion_ibfk_2` FOREIGN KEY (`usuario2_id`) REFERENCES `usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -412,7 +412,7 @@ CREATE TABLE `conversacion` (
 
 LOCK TABLES `conversacion` WRITE;
 /*!40000 ALTER TABLE `conversacion` DISABLE KEYS */;
-INSERT INTO `conversacion` VALUES (1,2,6,'Gracias, profesor. Ya me salió.','2026-10-04 19:10:00');
+INSERT INTO `conversacion` VALUES (1,2,6,'Gracias, profesor. Ya me salió.','2026-10-04 19:10:00'),(2,3,6,'¡Claro, Lucía! Puede ser sobre una persona especial. Mínimo 2 páginas.','2026-11-13 19:05:00'),(3,5,8,'Gracias, ahí estaré.','2026-11-13 09:30:00'),(4,2,4,'Gracias, Jorge. Conversaré con él y con su apoderado.','2026-11-11 12:30:00'),(5,1,2,'Carlos, recuerda cerrar el 3.er bimestre de Matemática esta semana.','2026-11-14 08:00:00'),(6,5,10,'Hola, envié una solicitud de cita. ¿Cuándo podría atenderme?','2026-11-13 20:00:00'),(7,2,7,'Sí, Mateo. Siempre deja el resultado en su mínima expresión.','2026-11-13 17:45:00');
 /*!40000 ALTER TABLE `conversacion` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -563,7 +563,7 @@ CREATE TABLE `entrega_tarea` (
   KEY `id_alumno` (`id_alumno`),
   CONSTRAINT `entrega_tarea_ibfk_1` FOREIGN KEY (`id_tarea`) REFERENCES `tarea` (`id_tarea`),
   CONSTRAINT `entrega_tarea_ibfk_2` FOREIGN KEY (`id_alumno`) REFERENCES `alumno` (`id_alumno`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -572,7 +572,7 @@ CREATE TABLE `entrega_tarea` (
 
 LOCK TABLES `entrega_tarea` WRITE;
 /*!40000 ALTER TABLE `entrega_tarea` DISABLE KEYS */;
-INSERT INTO `entrega_tarea` VALUES (1,1,1,'https://drive.google.com/lucia-ecuaciones','Adjunto mis ejercicios.','2026-10-04 19:30:00',17.00,'Buen trabajo, revisa el ejercicio 8.'),(2,1,3,'https://drive.google.com/sofia-ecuaciones',NULL,'2026-10-06 10:15:00',NULL,NULL);
+INSERT INTO `entrega_tarea` VALUES (1,1,1,'https://drive.google.com/lucia-ecuaciones','Adjunto mis ejercicios.','2026-10-04 19:30:00',17.00,'Buen trabajo, revisa el ejercicio 8.'),(2,1,3,'https://drive.google.com/sofia-ecuaciones',NULL,'2026-10-06 10:15:00',NULL,NULL),(3,4,1,'https://drive.google.com/alu-33333333-tarea-4',NULL,'2026-11-06 19:00:00',18.00,'Muy buena identificación del tema.'),(4,4,5,'https://drive.google.com/alu-73333333-tarea-4',NULL,'2026-11-05 19:00:00',19.00,'¡Excelente análisis!'),(5,4,7,'https://drive.google.com/alu-75555555-tarea-4',NULL,'2026-11-07 19:00:00',14.00,'Completa la sección del mensaje.'),(6,4,3,'https://drive.google.com/alu-71111111-tarea-4',NULL,'2026-11-07 19:00:00',NULL,NULL),(7,4,6,'https://drive.google.com/alu-74444444-tarea-4',NULL,'2026-11-10 19:00:00',NULL,NULL),(8,6,1,'https://drive.google.com/alu-33333333-tarea-6',NULL,'2026-11-01 19:00:00',16.00,'Bien, repasa la mitocondria.'),(9,6,4,'https://drive.google.com/alu-72222222-tarea-6',NULL,'2026-11-01 19:00:00',11.00,'Faltaron 4 preguntas.'),(10,6,9,'https://drive.google.com/alu-79999999-tarea-6',NULL,'2026-11-02 19:00:00',NULL,NULL),(11,3,5,'https://drive.google.com/alu-73333333-tarea-3',NULL,'2026-11-13 19:00:00',NULL,NULL),(12,2,5,'https://drive.google.com/alu-73333333-tarea-2',NULL,'2026-11-12 19:00:00',NULL,NULL),(13,2,8,'https://drive.google.com/alu-76666666-tarea-2',NULL,'2026-11-13 19:00:00',NULL,NULL);
 /*!40000 ALTER TABLE `entrega_tarea` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -594,7 +594,7 @@ CREATE TABLE `familiar` (
   PRIMARY KEY (`id_familiar`),
   UNIQUE KEY `dni` (`dni`),
   KEY `ix_familiar_id_familiar` (`id_familiar`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -603,7 +603,7 @@ CREATE TABLE `familiar` (
 
 LOCK TABLES `familiar` WRITE;
 /*!40000 ALTER TABLE `familiar` DISABLE KEYS */;
-INSERT INTO `familiar` VALUES (1,'55555555','Rosa','Quispe Flores','955555555','rosa.quispe@example.com','Av. Los Próceres 123, Lima');
+INSERT INTO `familiar` VALUES (1,'55555555','Rosa','Quispe Flores','955555555','rosa.quispe@example.com','Av. Los Próceres 123, Lima'),(2,'41234567','Patricia','Torres Vega','941234567','patricia.torres@example.com','Calle Real 456, Tumán'),(3,'42345678','Luis','Castillo Pérez','942345678','luis.castillo@example.com','Calle Real 456, Tumán'),(4,'43456789','Gloria','Rojas Díaz','943456789','gloria.rojas@example.com','Calle Real 456, Tumán'),(5,'44567890','Martín','Paredes Luna','944567890','martín.paredes@example.com','Calle Real 456, Tumán'),(6,'45678901','Silvia','Medina Cruz','945678901','silvia.medina@example.com','Calle Real 456, Tumán'),(7,'46789012','Raúl','Vargas Soto','946789012','raúl.vargas@example.com','Calle Real 456, Tumán'),(8,'47890123','Carmen','Cárdenas Ruiz','947890123','carmen.cárdenas@example.com','Calle Real 456, Tumán');
 /*!40000 ALTER TABLE `familiar` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -684,7 +684,7 @@ CREATE TABLE `material_clase` (
   PRIMARY KEY (`id_material`),
   KEY `id_carga_academica` (`id_carga_academica`),
   CONSTRAINT `material_clase_ibfk_1` FOREIGN KEY (`id_carga_academica`) REFERENCES `carga_academica` (`id_carga_academica`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -693,7 +693,7 @@ CREATE TABLE `material_clase` (
 
 LOCK TABLES `material_clase` WRITE;
 /*!40000 ALTER TABLE `material_clase` DISABLE KEYS */;
-INSERT INTO `material_clase` VALUES (1,4,'Ecuaciones de primer grado','Teoría y 10 ejercicios resueltos.','https://example.com/ecuaciones.pdf',1,'2026-10-29 00:32:04'),(2,4,'Sistemas de ecuaciones','Video explicativo del método de sustitución.','https://example.com/sistemas',2,'2026-10-29 00:32:04');
+INSERT INTO `material_clase` VALUES (1,4,'Ecuaciones de primer grado','Teoría y 10 ejercicios resueltos.','https://example.com/ecuaciones.pdf',1,'2026-11-14 10:38:11'),(2,4,'Sistemas de ecuaciones','Video explicativo del método de sustitución.','https://example.com/sistemas',2,'2026-11-14 10:38:11'),(3,5,'Plan lector: El caballero Carmelo','Cuento completo de Abraham Valdelomar.','https://example.com/caballero-carmelo.pdf',4,'2026-11-14 10:38:11'),(4,5,'Guía para escribir un ensayo','Estructura: introducción, desarrollo y conclusión.','https://example.com/guia-ensayo.pdf',4,'2026-11-14 10:38:11'),(5,6,'La célula: partes y funciones','Infografía y video de repaso.','https://example.com/la-celula',3,'2026-11-14 10:38:11'),(6,6,'Guía de laboratorio: densidad','Materiales y pasos del experimento.','https://example.com/lab-densidad.pdf',4,'2026-11-14 10:38:11'),(7,4,'Funciones lineales','Teoría, gráficas y ejercicios resueltos.','https://example.com/funciones-lineales.pdf',4,'2026-11-14 10:38:11'),(8,1,'Fracciones equivalentes','Ficha de práctica con 15 ejercicios.','https://example.com/fracciones.pdf',4,'2026-11-14 10:38:11');
 /*!40000 ALTER TABLE `material_clase` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -733,7 +733,7 @@ CREATE TABLE `matricula` (
 
 LOCK TABLES `matricula` WRITE;
 /*!40000 ALTER TABLE `matricula` DISABLE KEYS */;
-INSERT INTO `matricula` VALUES (1,'2026',1,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(2,'2026',2,1,7,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(3,'2026',3,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(4,'2026',4,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(5,'2026',5,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(6,'2026',6,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(7,'2026',7,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(8,'2026',8,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL'),(9,'2026',9,2,9,'2026-10-29 00:32:04','MATRICULADO','REGULAR','NORMAL');
+INSERT INTO `matricula` VALUES (1,'2026',1,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(2,'2026',2,1,7,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(3,'2026',3,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(4,'2026',4,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(5,'2026',5,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(6,'2026',6,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(7,'2026',7,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(8,'2026',8,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL'),(9,'2026',9,2,9,'2026-11-14 10:38:11','MATRICULADO','REGULAR','NORMAL');
 /*!40000 ALTER TABLE `matricula` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -756,7 +756,7 @@ CREATE TABLE `mensaje` (
   KEY `remitente_id` (`remitente_id`),
   CONSTRAINT `mensaje_ibfk_1` FOREIGN KEY (`id_conversacion`) REFERENCES `conversacion` (`id_conversacion`),
   CONSTRAINT `mensaje_ibfk_2` FOREIGN KEY (`remitente_id`) REFERENCES `usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -765,7 +765,7 @@ CREATE TABLE `mensaje` (
 
 LOCK TABLES `mensaje` WRITE;
 /*!40000 ALTER TABLE `mensaje` DISABLE KEYS */;
-INSERT INTO `mensaje` VALUES (1,1,6,'Profesor, ¿el ejercicio 8 de la tarea se resuelve por sustitución?',1,'2026-10-04 18:05:00'),(2,1,2,'Sí, Lucía. Despeja x en la primera ecuación y reemplázala en la segunda.',1,'2026-10-04 18:40:00'),(3,1,6,'Gracias, profesor. Ya me salió.',0,'2026-10-04 19:10:00');
+INSERT INTO `mensaje` VALUES (1,1,6,'Profesor, ¿el ejercicio 8 de la tarea se resuelve por sustitución?',1,'2026-10-04 18:05:00'),(2,1,2,'Sí, Lucía. Despeja x en la primera ecuación y reemplázala en la segunda.',1,'2026-10-04 18:40:00'),(3,1,6,'Gracias, profesor. Ya me salió.',0,'2026-10-04 19:10:00'),(4,2,6,'Profesora, ¿el ensayo puede ser sobre mi abuela?',1,'2026-11-13 18:20:00'),(5,2,3,'¡Claro, Lucía! Puede ser sobre una persona especial. Mínimo 2 páginas.',0,'2026-11-13 19:05:00'),(6,3,5,'Hola, Sofía. Tu cita quedó para hoy a las 11:30 en el tópico.',1,'2026-11-13 09:00:00'),(7,3,8,'Gracias, ahí estaré.',1,'2026-11-13 09:30:00'),(8,4,4,'Profesor, Diego tuvo un reporte por faltarle el respeto a un compañero en su clase.',1,'2026-11-11 12:00:00'),(9,4,2,'Gracias, Jorge. Conversaré con él y con su apoderado.',0,'2026-11-11 12:30:00'),(10,5,1,'Carlos, recuerda cerrar el 3.er bimestre de Matemática esta semana.',0,'2026-11-14 08:00:00'),(11,6,10,'Hola, envié una solicitud de cita. ¿Cuándo podría atenderme?',0,'2026-11-13 20:00:00'),(12,7,7,'Profesor, ¿las fracciones se simplifican al final?',1,'2026-11-13 17:10:00'),(13,7,2,'Sí, Mateo. Siempre deja el resultado en su mínima expresión.',0,'2026-11-13 17:45:00');
 /*!40000 ALTER TABLE `mensaje` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -843,7 +843,7 @@ CREATE TABLE `nota` (
   KEY `id_curso` (`id_curso`),
   CONSTRAINT `nota_ibfk_1` FOREIGN KEY (`id_matricula`) REFERENCES `matricula` (`id_matricula`),
   CONSTRAINT `nota_ibfk_2` FOREIGN KEY (`id_curso`) REFERENCES `curso` (`id_curso`)
-) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=190 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -852,7 +852,7 @@ CREATE TABLE `nota` (
 
 LOCK TABLES `nota` WRITE;
 /*!40000 ALTER TABLE `nota` DISABLE KEYS */;
-INSERT INTO `nota` VALUES (1,1,1,1,'Práctica 1',15.00,'2026-10-29 00:32:04'),(2,3,1,1,'Práctica 1',12.00,'2026-10-29 00:32:04'),(3,4,1,1,'Práctica 1',9.00,'2026-10-29 00:32:04'),(4,5,1,1,'Práctica 1',17.00,'2026-10-29 00:32:04'),(5,6,1,1,'Práctica 1',11.00,'2026-10-29 00:32:04'),(6,7,1,1,'Práctica 1',14.00,'2026-10-29 00:32:04'),(7,8,1,1,'Práctica 1',8.00,'2026-10-29 00:32:04'),(8,9,1,1,'Práctica 1',13.00,'2026-10-29 00:32:04'),(9,1,1,1,'Examen',16.00,'2026-10-29 00:32:04'),(10,3,1,1,'Examen',13.00,'2026-10-29 00:32:04'),(11,4,1,1,'Examen',10.00,'2026-10-29 00:32:04'),(12,5,1,1,'Examen',18.00,'2026-10-29 00:32:04'),(13,6,1,1,'Examen',12.00,'2026-10-29 00:32:04'),(14,7,1,1,'Examen',15.00,'2026-10-29 00:32:04'),(15,8,1,1,'Examen',9.00,'2026-10-29 00:32:04'),(16,9,1,1,'Examen',14.00,'2026-10-29 00:32:04'),(17,1,1,2,'Práctica 1',16.00,'2026-10-29 00:32:04'),(18,3,1,2,'Práctica 1',13.00,'2026-10-29 00:32:04'),(19,4,1,2,'Práctica 1',10.00,'2026-10-29 00:32:04'),(20,5,1,2,'Práctica 1',18.00,'2026-10-29 00:32:04'),(21,6,1,2,'Práctica 1',12.00,'2026-10-29 00:32:04'),(22,7,1,2,'Práctica 1',15.00,'2026-10-29 00:32:04'),(23,8,1,2,'Práctica 1',9.00,'2026-10-29 00:32:04'),(24,9,1,2,'Práctica 1',14.00,'2026-10-29 00:32:04'),(25,1,1,2,'Examen',17.00,'2026-10-29 00:32:04'),(26,3,1,2,'Examen',14.00,'2026-10-29 00:32:04'),(27,4,1,2,'Examen',11.00,'2026-10-29 00:32:04'),(28,5,1,2,'Examen',19.00,'2026-10-29 00:32:04'),(29,6,1,2,'Examen',13.00,'2026-10-29 00:32:04'),(30,7,1,2,'Examen',16.00,'2026-10-29 00:32:04'),(31,8,1,2,'Examen',10.00,'2026-10-29 00:32:04'),(32,9,1,2,'Examen',15.00,'2026-10-29 00:32:04'),(33,1,1,3,'Práctica 1',17.00,'2026-10-29 00:32:04'),(34,3,1,3,'Práctica 1',14.00,'2026-10-29 00:32:04'),(35,4,1,3,'Práctica 1',11.00,'2026-10-29 00:32:04'),(36,5,1,3,'Práctica 1',19.00,'2026-10-29 00:32:04'),(37,6,1,3,'Práctica 1',13.00,'2026-10-29 00:32:04'),(38,7,1,3,'Práctica 1',16.00,'2026-10-29 00:32:04'),(39,8,1,3,'Práctica 1',10.00,'2026-10-29 00:32:04'),(40,9,1,3,'Práctica 1',15.00,'2026-10-29 00:32:04'),(41,1,1,3,'Examen',18.00,'2026-10-29 00:32:04'),(42,3,1,3,'Examen',15.00,'2026-10-29 00:32:04'),(43,4,1,3,'Examen',12.00,'2026-10-29 00:32:04'),(44,5,1,3,'Examen',20.00,'2026-10-29 00:32:04'),(45,6,1,3,'Examen',14.00,'2026-10-29 00:32:04'),(46,7,1,3,'Examen',17.00,'2026-10-29 00:32:04'),(47,8,1,3,'Examen',11.00,'2026-10-29 00:32:04'),(48,9,1,3,'Examen',16.00,'2026-10-29 00:32:04'),(49,1,2,1,'Práctica 1',14.00,'2026-10-29 00:32:04'),(50,3,2,1,'Práctica 1',11.00,'2026-10-29 00:32:04'),(51,4,2,1,'Práctica 1',8.00,'2026-10-29 00:32:04'),(52,5,2,1,'Práctica 1',16.00,'2026-10-29 00:32:04'),(53,6,2,1,'Práctica 1',10.00,'2026-10-29 00:32:04'),(54,7,2,1,'Práctica 1',13.00,'2026-10-29 00:32:04'),(55,8,2,1,'Práctica 1',7.00,'2026-10-29 00:32:04'),(56,9,2,1,'Práctica 1',12.00,'2026-10-29 00:32:04'),(57,1,2,1,'Examen',15.00,'2026-10-29 00:32:04'),(58,3,2,1,'Examen',12.00,'2026-10-29 00:32:04'),(59,4,2,1,'Examen',9.00,'2026-10-29 00:32:04'),(60,5,2,1,'Examen',17.00,'2026-10-29 00:32:04'),(61,6,2,1,'Examen',11.00,'2026-10-29 00:32:04'),(62,7,2,1,'Examen',14.00,'2026-10-29 00:32:04'),(63,8,2,1,'Examen',8.00,'2026-10-29 00:32:04'),(64,9,2,1,'Examen',13.00,'2026-10-29 00:32:04'),(65,1,2,2,'Práctica 1',15.00,'2026-10-29 00:32:04'),(66,3,2,2,'Práctica 1',12.00,'2026-10-29 00:32:04'),(67,4,2,2,'Práctica 1',9.00,'2026-10-29 00:32:04'),(68,5,2,2,'Práctica 1',17.00,'2026-10-29 00:32:04'),(69,6,2,2,'Práctica 1',11.00,'2026-10-29 00:32:04'),(70,7,2,2,'Práctica 1',14.00,'2026-10-29 00:32:04'),(71,8,2,2,'Práctica 1',8.00,'2026-10-29 00:32:04'),(72,9,2,2,'Práctica 1',13.00,'2026-10-29 00:32:04'),(73,1,2,2,'Examen',16.00,'2026-10-29 00:32:04'),(74,3,2,2,'Examen',13.00,'2026-10-29 00:32:04'),(75,4,2,2,'Examen',10.00,'2026-10-29 00:32:04'),(76,5,2,2,'Examen',18.00,'2026-10-29 00:32:04'),(77,6,2,2,'Examen',12.00,'2026-10-29 00:32:04'),(78,7,2,2,'Examen',15.00,'2026-10-29 00:32:04'),(79,8,2,2,'Examen',9.00,'2026-10-29 00:32:04'),(80,9,2,2,'Examen',14.00,'2026-10-29 00:32:04'),(81,1,2,3,'Práctica 1',16.00,'2026-10-29 00:32:04'),(82,3,2,3,'Práctica 1',13.00,'2026-10-29 00:32:04'),(83,4,2,3,'Práctica 1',10.00,'2026-10-29 00:32:04'),(84,5,2,3,'Práctica 1',18.00,'2026-10-29 00:32:04'),(85,6,2,3,'Práctica 1',12.00,'2026-10-29 00:32:04'),(86,7,2,3,'Práctica 1',15.00,'2026-10-29 00:32:04'),(87,8,2,3,'Práctica 1',9.00,'2026-10-29 00:32:04'),(88,9,2,3,'Práctica 1',14.00,'2026-10-29 00:32:04'),(89,1,2,3,'Examen',17.00,'2026-10-29 00:32:04'),(90,3,2,3,'Examen',14.00,'2026-10-29 00:32:04'),(91,4,2,3,'Examen',11.00,'2026-10-29 00:32:04'),(92,5,2,3,'Examen',19.00,'2026-10-29 00:32:04'),(93,6,2,3,'Examen',13.00,'2026-10-29 00:32:04'),(94,7,2,3,'Examen',16.00,'2026-10-29 00:32:04'),(95,8,2,3,'Examen',10.00,'2026-10-29 00:32:04'),(96,9,2,3,'Examen',15.00,'2026-10-29 00:32:04');
+INSERT INTO `nota` VALUES (1,1,1,1,'Práctica 1',15.00,'2026-11-14 10:38:11'),(2,3,1,1,'Práctica 1',12.00,'2026-11-14 10:38:11'),(3,4,1,1,'Práctica 1',9.00,'2026-11-14 10:38:11'),(4,5,1,1,'Práctica 1',17.00,'2026-11-14 10:38:11'),(5,6,1,1,'Práctica 1',11.00,'2026-11-14 10:38:11'),(6,7,1,1,'Práctica 1',14.00,'2026-11-14 10:38:11'),(7,8,1,1,'Práctica 1',8.00,'2026-11-14 10:38:11'),(8,9,1,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(9,1,1,1,'Examen',16.00,'2026-11-14 10:38:11'),(10,3,1,1,'Examen',13.00,'2026-11-14 10:38:11'),(11,4,1,1,'Examen',10.00,'2026-11-14 10:38:11'),(12,5,1,1,'Examen',18.00,'2026-11-14 10:38:11'),(13,6,1,1,'Examen',12.00,'2026-11-14 10:38:11'),(14,7,1,1,'Examen',15.00,'2026-11-14 10:38:11'),(15,8,1,1,'Examen',9.00,'2026-11-14 10:38:11'),(16,9,1,1,'Examen',14.00,'2026-11-14 10:38:11'),(17,1,1,2,'Práctica 1',16.00,'2026-11-14 10:38:11'),(18,3,1,2,'Práctica 1',13.00,'2026-11-14 10:38:11'),(19,4,1,2,'Práctica 1',10.00,'2026-11-14 10:38:11'),(20,5,1,2,'Práctica 1',18.00,'2026-11-14 10:38:11'),(21,6,1,2,'Práctica 1',12.00,'2026-11-14 10:38:11'),(22,7,1,2,'Práctica 1',15.00,'2026-11-14 10:38:11'),(23,8,1,2,'Práctica 1',9.00,'2026-11-14 10:38:11'),(24,9,1,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(25,1,1,2,'Examen',17.00,'2026-11-14 10:38:11'),(26,3,1,2,'Examen',14.00,'2026-11-14 10:38:11'),(27,4,1,2,'Examen',11.00,'2026-11-14 10:38:11'),(28,5,1,2,'Examen',19.00,'2026-11-14 10:38:11'),(29,6,1,2,'Examen',13.00,'2026-11-14 10:38:11'),(30,7,1,2,'Examen',16.00,'2026-11-14 10:38:11'),(31,8,1,2,'Examen',10.00,'2026-11-14 10:38:11'),(32,9,1,2,'Examen',15.00,'2026-11-14 10:38:11'),(33,1,1,3,'Práctica 1',17.00,'2026-11-14 10:38:11'),(34,3,1,3,'Práctica 1',14.00,'2026-11-14 10:38:11'),(35,4,1,3,'Práctica 1',11.00,'2026-11-14 10:38:11'),(36,5,1,3,'Práctica 1',19.00,'2026-11-14 10:38:11'),(37,6,1,3,'Práctica 1',13.00,'2026-11-14 10:38:11'),(38,7,1,3,'Práctica 1',16.00,'2026-11-14 10:38:11'),(39,8,1,3,'Práctica 1',10.00,'2026-11-14 10:38:11'),(40,9,1,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(41,1,1,3,'Examen',18.00,'2026-11-14 10:38:11'),(42,3,1,3,'Examen',15.00,'2026-11-14 10:38:11'),(43,4,1,3,'Examen',12.00,'2026-11-14 10:38:11'),(44,5,1,3,'Examen',20.00,'2026-11-14 10:38:11'),(45,6,1,3,'Examen',14.00,'2026-11-14 10:38:11'),(46,7,1,3,'Examen',17.00,'2026-11-14 10:38:11'),(47,8,1,3,'Examen',11.00,'2026-11-14 10:38:11'),(48,9,1,3,'Examen',16.00,'2026-11-14 10:38:11'),(49,1,2,1,'Práctica 1',14.00,'2026-11-14 10:38:11'),(50,3,2,1,'Práctica 1',11.00,'2026-11-14 10:38:11'),(51,4,2,1,'Práctica 1',8.00,'2026-11-14 10:38:11'),(52,5,2,1,'Práctica 1',16.00,'2026-11-14 10:38:11'),(53,6,2,1,'Práctica 1',10.00,'2026-11-14 10:38:11'),(54,7,2,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(55,8,2,1,'Práctica 1',7.00,'2026-11-14 10:38:11'),(56,9,2,1,'Práctica 1',12.00,'2026-11-14 10:38:11'),(57,1,2,1,'Examen',15.00,'2026-11-14 10:38:11'),(58,3,2,1,'Examen',12.00,'2026-11-14 10:38:11'),(59,4,2,1,'Examen',9.00,'2026-11-14 10:38:11'),(60,5,2,1,'Examen',17.00,'2026-11-14 10:38:11'),(61,6,2,1,'Examen',11.00,'2026-11-14 10:38:11'),(62,7,2,1,'Examen',14.00,'2026-11-14 10:38:11'),(63,8,2,1,'Examen',8.00,'2026-11-14 10:38:11'),(64,9,2,1,'Examen',13.00,'2026-11-14 10:38:11'),(65,1,2,2,'Práctica 1',15.00,'2026-11-14 10:38:11'),(66,3,2,2,'Práctica 1',12.00,'2026-11-14 10:38:11'),(67,4,2,2,'Práctica 1',9.00,'2026-11-14 10:38:11'),(68,5,2,2,'Práctica 1',17.00,'2026-11-14 10:38:11'),(69,6,2,2,'Práctica 1',11.00,'2026-11-14 10:38:11'),(70,7,2,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(71,8,2,2,'Práctica 1',8.00,'2026-11-14 10:38:11'),(72,9,2,2,'Práctica 1',13.00,'2026-11-14 10:38:11'),(73,1,2,2,'Examen',16.00,'2026-11-14 10:38:11'),(74,3,2,2,'Examen',13.00,'2026-11-14 10:38:11'),(75,4,2,2,'Examen',10.00,'2026-11-14 10:38:11'),(76,5,2,2,'Examen',18.00,'2026-11-14 10:38:11'),(77,6,2,2,'Examen',12.00,'2026-11-14 10:38:11'),(78,7,2,2,'Examen',15.00,'2026-11-14 10:38:11'),(79,8,2,2,'Examen',9.00,'2026-11-14 10:38:11'),(80,9,2,2,'Examen',14.00,'2026-11-14 10:38:11'),(81,1,2,3,'Práctica 1',16.00,'2026-11-14 10:38:11'),(82,3,2,3,'Práctica 1',13.00,'2026-11-14 10:38:11'),(83,4,2,3,'Práctica 1',10.00,'2026-11-14 10:38:11'),(84,5,2,3,'Práctica 1',18.00,'2026-11-14 10:38:11'),(85,6,2,3,'Práctica 1',12.00,'2026-11-14 10:38:11'),(86,7,2,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(87,8,2,3,'Práctica 1',9.00,'2026-11-14 10:38:11'),(88,9,2,3,'Práctica 1',14.00,'2026-11-14 10:38:11'),(89,1,2,3,'Examen',17.00,'2026-11-14 10:38:11'),(90,3,2,3,'Examen',14.00,'2026-11-14 10:38:11'),(91,4,2,3,'Examen',11.00,'2026-11-14 10:38:11'),(92,5,2,3,'Examen',19.00,'2026-11-14 10:38:11'),(93,6,2,3,'Examen',13.00,'2026-11-14 10:38:11'),(94,7,2,3,'Examen',16.00,'2026-11-14 10:38:11'),(95,8,2,3,'Examen',10.00,'2026-11-14 10:38:11'),(96,9,2,3,'Examen',15.00,'2026-11-14 10:38:11'),(97,1,3,1,'Práctica 1',16.00,'2026-11-14 10:38:11'),(98,3,3,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(99,4,3,1,'Práctica 1',10.00,'2026-11-14 10:38:11'),(100,5,3,1,'Práctica 1',18.00,'2026-11-14 10:38:11'),(101,6,3,1,'Práctica 1',12.00,'2026-11-14 10:38:11'),(102,7,3,1,'Práctica 1',15.00,'2026-11-14 10:38:11'),(103,8,3,1,'Práctica 1',9.00,'2026-11-14 10:38:11'),(104,9,3,1,'Práctica 1',14.00,'2026-11-14 10:38:11'),(105,1,3,1,'Examen',17.00,'2026-11-14 10:38:11'),(106,3,3,1,'Examen',14.00,'2026-11-14 10:38:11'),(107,4,3,1,'Examen',11.00,'2026-11-14 10:38:11'),(108,5,3,1,'Examen',19.00,'2026-11-14 10:38:11'),(109,6,3,1,'Examen',13.00,'2026-11-14 10:38:11'),(110,7,3,1,'Examen',16.00,'2026-11-14 10:38:11'),(111,8,3,1,'Examen',10.00,'2026-11-14 10:38:11'),(112,9,3,1,'Examen',15.00,'2026-11-14 10:38:11'),(113,1,3,2,'Práctica 1',17.00,'2026-11-14 10:38:11'),(114,3,3,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(115,4,3,2,'Práctica 1',11.00,'2026-11-14 10:38:11'),(116,5,3,2,'Práctica 1',19.00,'2026-11-14 10:38:11'),(117,6,3,2,'Práctica 1',13.00,'2026-11-14 10:38:11'),(118,7,3,2,'Práctica 1',16.00,'2026-11-14 10:38:11'),(119,8,3,2,'Práctica 1',10.00,'2026-11-14 10:38:11'),(120,9,3,2,'Práctica 1',15.00,'2026-11-14 10:38:11'),(121,1,3,2,'Examen',18.00,'2026-11-14 10:38:11'),(122,3,3,2,'Examen',15.00,'2026-11-14 10:38:11'),(123,4,3,2,'Examen',12.00,'2026-11-14 10:38:11'),(124,5,3,2,'Examen',20.00,'2026-11-14 10:38:11'),(125,6,3,2,'Examen',14.00,'2026-11-14 10:38:11'),(126,7,3,2,'Examen',17.00,'2026-11-14 10:38:11'),(127,8,3,2,'Examen',11.00,'2026-11-14 10:38:11'),(128,9,3,2,'Examen',16.00,'2026-11-14 10:38:11'),(129,1,3,3,'Práctica 1',18.00,'2026-11-14 10:38:11'),(130,3,3,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(131,4,3,3,'Práctica 1',12.00,'2026-11-14 10:38:11'),(132,5,3,3,'Práctica 1',20.00,'2026-11-14 10:38:11'),(133,6,3,3,'Práctica 1',14.00,'2026-11-14 10:38:11'),(134,7,3,3,'Práctica 1',17.00,'2026-11-14 10:38:11'),(135,8,3,3,'Práctica 1',11.00,'2026-11-14 10:38:11'),(136,9,3,3,'Práctica 1',16.00,'2026-11-14 10:38:11'),(137,1,3,3,'Examen',19.00,'2026-11-14 10:38:11'),(138,3,3,3,'Examen',16.00,'2026-11-14 10:38:11'),(139,4,3,3,'Examen',13.00,'2026-11-14 10:38:11'),(140,5,3,3,'Examen',20.00,'2026-11-14 10:38:11'),(141,6,3,3,'Examen',15.00,'2026-11-14 10:38:11'),(142,7,3,3,'Examen',18.00,'2026-11-14 10:38:11'),(143,8,3,3,'Examen',12.00,'2026-11-14 10:38:11'),(144,9,3,3,'Examen',17.00,'2026-11-14 10:38:11'),(145,2,1,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(146,2,1,1,'Examen',14.00,'2026-11-14 10:38:11'),(147,2,1,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(148,2,1,2,'Examen',15.00,'2026-11-14 10:38:11'),(149,2,1,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(150,2,1,3,'Examen',16.00,'2026-11-14 10:38:11'),(151,2,1,4,'Práctica 1',16.00,'2026-11-14 10:38:11'),(152,1,1,4,'Práctica 1',18.00,'2026-11-14 10:38:11'),(153,3,1,4,'Práctica 1',15.00,'2026-11-14 10:38:11'),(154,4,1,4,'Práctica 1',12.00,'2026-11-14 10:38:11'),(155,5,1,4,'Práctica 1',20.00,'2026-11-14 10:38:11'),(156,6,1,4,'Práctica 1',14.00,'2026-11-14 10:38:11'),(157,7,1,4,'Práctica 1',17.00,'2026-11-14 10:38:11'),(158,8,1,4,'Práctica 1',11.00,'2026-11-14 10:38:11'),(159,9,1,4,'Práctica 1',16.00,'2026-11-14 10:38:11'),(160,2,2,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(161,2,2,1,'Examen',14.00,'2026-11-14 10:38:11'),(162,2,2,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(163,2,2,2,'Examen',15.00,'2026-11-14 10:38:11'),(164,2,2,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(165,2,2,3,'Examen',16.00,'2026-11-14 10:38:11'),(166,2,2,4,'Práctica 1',16.00,'2026-11-14 10:38:11'),(167,1,2,4,'Práctica 1',18.00,'2026-11-14 10:38:11'),(168,3,2,4,'Práctica 1',15.00,'2026-11-14 10:38:11'),(169,4,2,4,'Práctica 1',12.00,'2026-11-14 10:38:11'),(170,5,2,4,'Práctica 1',20.00,'2026-11-14 10:38:11'),(171,6,2,4,'Práctica 1',14.00,'2026-11-14 10:38:11'),(172,7,2,4,'Práctica 1',17.00,'2026-11-14 10:38:11'),(173,8,2,4,'Práctica 1',11.00,'2026-11-14 10:38:11'),(174,9,2,4,'Práctica 1',16.00,'2026-11-14 10:38:11'),(175,2,3,1,'Práctica 1',13.00,'2026-11-14 10:38:11'),(176,2,3,1,'Examen',14.00,'2026-11-14 10:38:11'),(177,2,3,2,'Práctica 1',14.00,'2026-11-14 10:38:11'),(178,2,3,2,'Examen',15.00,'2026-11-14 10:38:11'),(179,2,3,3,'Práctica 1',15.00,'2026-11-14 10:38:11'),(180,2,3,3,'Examen',16.00,'2026-11-14 10:38:11'),(181,2,3,4,'Práctica 1',16.00,'2026-11-14 10:38:11'),(182,1,3,4,'Práctica 1',18.00,'2026-11-14 10:38:11'),(183,3,3,4,'Práctica 1',15.00,'2026-11-14 10:38:11'),(184,4,3,4,'Práctica 1',12.00,'2026-11-14 10:38:11'),(185,5,3,4,'Práctica 1',20.00,'2026-11-14 10:38:11'),(186,6,3,4,'Práctica 1',14.00,'2026-11-14 10:38:11'),(187,7,3,4,'Práctica 1',17.00,'2026-11-14 10:38:11'),(188,8,3,4,'Práctica 1',11.00,'2026-11-14 10:38:11'),(189,9,3,4,'Práctica 1',16.00,'2026-11-14 10:38:11');
 /*!40000 ALTER TABLE `nota` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -875,7 +875,7 @@ CREATE TABLE `notificacion` (
   PRIMARY KEY (`id_notificacion`),
   KEY `ix_notificacion_usuario_leida` (`id_usuario`,`leida`),
   CONSTRAINT `notificacion_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -884,7 +884,7 @@ CREATE TABLE `notificacion` (
 
 LOCK TABLES `notificacion` WRITE;
 /*!40000 ALTER TABLE `notificacion` DISABLE KEYS */;
-INSERT INTO `notificacion` VALUES (1,6,'CONDUCTA','Nuevo reporte de conducta','No portar el uniforme completo (−2 puntos)',2,1,'2026-10-02 08:00:00'),(2,6,'CALIFICACION','Tu tarea fue calificada','Ejercicios de ecuaciones: 17',1,1,'2026-10-06 09:00:00'),(3,2,'MENSAJE','Mensaje de Lucía Quispe Flores','Gracias, profesor. Ya me salió.',1,0,'2026-10-04 19:10:00'),(4,6,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(5,8,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(6,9,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(7,10,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(8,11,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(9,12,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(10,13,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(11,14,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00');
+INSERT INTO `notificacion` VALUES (1,6,'CONDUCTA','Nuevo reporte de conducta','No portar el uniforme completo (−2 puntos)',2,1,'2026-10-02 08:00:00'),(2,6,'CALIFICACION','Tu tarea fue calificada','Ejercicios de ecuaciones: 17',1,1,'2026-10-06 09:00:00'),(3,2,'MENSAJE','Mensaje de Lucía Quispe Flores','Gracias, profesor. Ya me salió.',1,0,'2026-10-04 19:10:00'),(4,6,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(5,8,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(6,9,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(7,10,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(8,11,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(9,12,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(10,13,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(11,14,'TAREA','Nueva tarea de Matemática','Proyecto: sistemas de ecuaciones · entrega hasta el 20/11 23:59',2,0,'2026-10-13 08:00:00'),(12,6,'CLASE','Nueva clase virtual de Matemática','Funciones lineales: resolución de dudas · mañana 16:00',2,0,'2026-11-13 10:00:00'),(13,6,'MENSAJE','Mensaje de María Salazar Vega','¡Claro, Lucía! Puede ser sobre una persona especial.',2,0,'2026-11-13 19:05:00'),(14,6,'CALIFICACION','Tu tarea fue calificada','Ficha de lectura: El caballero Carmelo: 18',4,1,'2026-11-08 09:00:00'),(15,8,'CITA','Cita programada','Tu cita con psicología es hoy a las 11:30',3,0,'2026-11-13 09:00:00'),(16,8,'CONDUCTA','Nuevo reporte de conducta','Tardanza injustificada (−1 punto)',NULL,0,'2026-11-14 08:00:00'),(17,9,'CITA','Cita programada','Tu cita con psicología es en dos días a las 10:00',4,0,'2026-11-12 12:00:00'),(18,9,'CONDUCTA','Nuevo reporte de conducta','Falta de respeto a un compañero (−5 puntos)',NULL,1,'2026-11-11 11:05:00'),(19,10,'CALIFICACION','Tu tarea fue calificada','Ficha de lectura: El caballero Carmelo: 19',4,0,'2026-11-08 09:00:00'),(20,7,'TAREA','Nueva tarea de Matemática','Fracciones: ejercicios · entrega en 3 días',7,0,'2026-11-13 08:00:00'),(21,2,'MENSAJE','Mensaje de Ana Torres Ruiz','Carlos, recuerda cerrar el 3.er bimestre de Matemática esta semana.',5,0,'2026-11-14 08:00:00'),(22,4,'MENSAJE','Mensaje de Carlos Mendoza Paz','Gracias, Jorge. Conversaré con él y con su apoderado.',4,0,'2026-11-11 12:30:00'),(23,5,'CITA','Nueva solicitud de cita','Valeria Huamán Rojas: Me siento muy estresada por los exámenes',5,0,'2026-11-13 08:30:00'),(24,5,'MENSAJE','Mensaje de Valeria Huamán Rojas','Hola, envié una solicitud de cita. ¿Cuándo podría atenderme?',6,0,'2026-11-13 20:00:00'),(25,1,'LIBRETA','Bimestre cerrado','Matemática 3ro A: el 2.º bimestre ya está en la libreta',NULL,1,'2026-11-04 18:00:00'),(26,6,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(27,8,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(28,9,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(29,10,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(30,11,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(31,12,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(32,13,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00'),(33,14,'TAREA','Nueva tarea de Comunicación','Ensayo: mi lugar favorito · entrega en 5 días',3,0,'2026-11-12 08:00:00');
 /*!40000 ALTER TABLE `notificacion` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1033,7 +1033,7 @@ CREATE TABLE `reporte_conducta` (
   CONSTRAINT `reporte_conducta_ibfk_2` FOREIGN KEY (`id_nivel_conducta`) REFERENCES `nivel_conducta` (`id_nivel_conducta`),
   CONSTRAINT `reporte_conducta_ibfk_3` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`id_usuario`),
   CONSTRAINT `reporte_conducta_ibfk_4` FOREIGN KEY (`anulado_por`) REFERENCES `usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1042,7 +1042,7 @@ CREATE TABLE `reporte_conducta` (
 
 LOCK TABLES `reporte_conducta` WRITE;
 /*!40000 ALTER TABLE `reporte_conducta` DISABLE KEYS */;
-INSERT INTO `reporte_conducta` VALUES (1,1,3,4,'2026-09-15 10:20:00','Usaba el celular durante el examen de Matemática.','https://example.com/evidencia-celular.jpg','REGISTRADO',NULL,NULL,NULL),(2,1,2,4,'2026-10-02 07:50:00','Llegó sin la corbata del uniforme.',NULL,'REGISTRADO',NULL,NULL,NULL);
+INSERT INTO `reporte_conducta` VALUES (1,1,3,4,'2026-09-15 10:20:00','Usaba el celular durante el examen de Matemática.','https://example.com/evidencia-celular.jpg','REGISTRADO',NULL,NULL,NULL),(2,1,2,4,'2026-10-02 07:50:00','Llegó sin la corbata del uniforme.',NULL,'REGISTRADO',NULL,NULL,NULL),(3,3,1,4,'2026-11-14 07:55:00','Llegó 15 minutos tarde a la formación.',NULL,'REGISTRADO',NULL,NULL,NULL),(4,4,4,4,'2026-11-11 11:00:00','Insultó a un compañero durante la clase de Matemática.',NULL,'REGISTRADO',NULL,NULL,NULL),(5,8,2,4,'2026-11-07 07:50:00','Vino con zapatillas de color.',NULL,'REGISTRADO',NULL,NULL,NULL),(6,2,1,4,'2026-11-12 08:05:00','Llegó después del inicio de clases.',NULL,'REGISTRADO',NULL,NULL,NULL),(7,6,3,4,'2026-11-09 10:30:00','Usaba el celular durante la clase de Ciencia.',NULL,'ANULADO','Tenía permiso de la docente para usar la calculadora del celular.',4,'2026-11-09 12:00:00');
 /*!40000 ALTER TABLE `reporte_conducta` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1068,7 +1068,7 @@ CREATE TABLE `resumen_nota` (
   KEY `id_curso` (`id_curso`),
   CONSTRAINT `resumen_nota_ibfk_1` FOREIGN KEY (`id_matricula`) REFERENCES `matricula` (`id_matricula`),
   CONSTRAINT `resumen_nota_ibfk_2` FOREIGN KEY (`id_curso`) REFERENCES `curso` (`id_curso`)
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1077,7 +1077,7 @@ CREATE TABLE `resumen_nota` (
 
 LOCK TABLES `resumen_nota` WRITE;
 /*!40000 ALTER TABLE `resumen_nota` DISABLE KEYS */;
-INSERT INTO `resumen_nota` VALUES (1,4,1,9.50,10.50,NULL,NULL,10.00,'EN CURSO'),(2,9,1,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(3,5,1,17.50,18.50,NULL,NULL,18.00,'EN CURSO'),(4,6,1,11.50,12.50,NULL,NULL,12.00,'EN CURSO'),(5,1,1,15.50,16.50,NULL,NULL,16.00,'EN CURSO'),(6,3,1,12.50,13.50,NULL,NULL,13.00,'EN CURSO'),(7,7,1,14.50,15.50,NULL,NULL,15.00,'EN CURSO'),(8,8,1,8.50,9.50,NULL,NULL,9.00,'EN CURSO'),(17,4,2,8.50,9.50,NULL,NULL,9.00,'EN CURSO'),(18,9,2,12.50,13.50,NULL,NULL,13.00,'EN CURSO'),(19,5,2,16.50,17.50,NULL,NULL,17.00,'EN CURSO'),(20,6,2,10.50,11.50,NULL,NULL,11.00,'EN CURSO'),(21,1,2,14.50,15.50,NULL,NULL,15.00,'EN CURSO'),(22,3,2,11.50,12.50,NULL,NULL,12.00,'EN CURSO'),(23,7,2,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(24,8,2,7.50,8.50,NULL,NULL,8.00,'EN CURSO');
+INSERT INTO `resumen_nota` VALUES (1,4,1,9.50,10.50,NULL,NULL,10.00,'EN CURSO'),(2,9,1,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(3,5,1,17.50,18.50,NULL,NULL,18.00,'EN CURSO'),(4,6,1,11.50,12.50,NULL,NULL,12.00,'EN CURSO'),(5,1,1,15.50,16.50,NULL,NULL,16.00,'EN CURSO'),(6,3,1,12.50,13.50,NULL,NULL,13.00,'EN CURSO'),(7,7,1,14.50,15.50,NULL,NULL,15.00,'EN CURSO'),(8,8,1,8.50,9.50,NULL,NULL,9.00,'EN CURSO'),(17,4,2,8.50,9.50,NULL,NULL,9.00,'EN CURSO'),(18,9,2,12.50,13.50,NULL,NULL,13.00,'EN CURSO'),(19,5,2,16.50,17.50,NULL,NULL,17.00,'EN CURSO'),(20,6,2,10.50,11.50,NULL,NULL,11.00,'EN CURSO'),(21,1,2,14.50,15.50,NULL,NULL,15.00,'EN CURSO'),(22,3,2,11.50,12.50,NULL,NULL,12.00,'EN CURSO'),(23,7,2,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(24,8,2,7.50,8.50,NULL,NULL,8.00,'EN CURSO'),(33,4,3,10.50,11.50,NULL,NULL,11.00,'EN CURSO'),(34,9,3,14.50,15.50,NULL,NULL,15.00,'EN CURSO'),(35,5,3,18.50,19.50,NULL,NULL,19.00,'EN CURSO'),(36,6,3,12.50,13.50,NULL,NULL,13.00,'EN CURSO'),(37,1,3,16.50,17.50,NULL,NULL,17.00,'EN CURSO'),(38,3,3,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(39,7,3,15.50,16.50,NULL,NULL,16.00,'EN CURSO'),(40,8,3,9.50,10.50,NULL,NULL,10.00,'EN CURSO'),(49,2,1,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(51,2,2,13.50,14.50,NULL,NULL,14.00,'EN CURSO'),(53,2,3,13.50,14.50,NULL,NULL,14.00,'EN CURSO');
 /*!40000 ALTER TABLE `resumen_nota` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1167,7 +1167,7 @@ CREATE TABLE `tarea` (
   PRIMARY KEY (`id_tarea`),
   KEY `id_carga_academica` (`id_carga_academica`),
   CONSTRAINT `tarea_ibfk_1` FOREIGN KEY (`id_carga_academica`) REFERENCES `carga_academica` (`id_carga_academica`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1176,7 +1176,7 @@ CREATE TABLE `tarea` (
 
 LOCK TABLES `tarea` WRITE;
 /*!40000 ALTER TABLE `tarea` DISABLE KEYS */;
-INSERT INTO `tarea` VALUES (1,4,'Ejercicios de ecuaciones','Resolver los 10 ejercicios de la página 45.','2026-09-28 08:00:00','2026-10-05 23:59:00','https://example.com/ejercicios-ecuaciones.pdf','ACTIVO','TAREA',3,0),(2,4,'Proyecto: sistemas de ecuaciones','Video de 3 minutos explicando un problema real.','2026-10-29 00:32:04','2026-11-20 23:59:00',NULL,'ACTIVO','TAREA',4,0);
+INSERT INTO `tarea` VALUES (1,4,'Ejercicios de ecuaciones','Resolver los 10 ejercicios de la página 45.','2026-09-28 08:00:00','2026-10-05 23:59:00','https://example.com/ejercicios-ecuaciones.pdf','ACTIVO','TAREA',3,0),(2,4,'Proyecto: sistemas de ecuaciones','Video de 3 minutos explicando un problema real.','2026-11-14 10:38:11','2026-11-20 23:59:00',NULL,'ACTIVO','TAREA',4,0),(3,5,'Ensayo: mi lugar favorito','Ensayo de 2 páginas sobre un lugar o una persona especial.','2026-11-12 08:00:00','2026-11-19 23:59:00',NULL,'ACTIVO','TAREA',4,0),(4,5,'Ficha de lectura: El caballero Carmelo','Completa la ficha: personajes, tema y mensaje.','2026-10-31 08:00:00','2026-11-08 23:59:00',NULL,'ACTIVO','TAREA',4,0),(5,6,'Informe de laboratorio: densidad','Informe con tus mediciones y conclusiones.','2026-11-13 08:00:00','2026-11-23 23:59:00',NULL,'ACTIVO','TAREA',4,0),(6,6,'Cuestionario: la célula','Responde las 12 preguntas del cuestionario.','2026-10-29 08:00:00','2026-11-02 23:59:00',NULL,'ACTIVO','TAREA',4,0),(7,1,'Fracciones: ejercicios','Resolver la ficha de fracciones equivalentes.','2026-11-13 08:00:00','2026-11-17 23:59:00',NULL,'ACTIVO','TAREA',4,0);
 /*!40000 ALTER TABLE `tarea` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1232,9 +1232,13 @@ CREATE TABLE `usuario` (
 
 LOCK TABLES `usuario` WRITE;
 /*!40000 ALTER TABLE `usuario` DISABLE KEYS */;
-INSERT INTO `usuario` VALUES (1,'ADM-11111111','$2b$12$cC8t1YmaFnn30Xk.uYg.Mu47EsKaSqiWjUiTyyzxPcVAUR0den41S','ADMIN',1,0,'2026-10-29 00:32:02'),(2,'DOC-22222222','$2b$12$SmOJFDxnPqob75DYjPZStOjn3DJ.Rwzsdtj.re5NeCORjPcimzVxK','DOCENTE',1,0,'2026-10-29 00:32:02'),(3,'DOC-66666666','$2b$12$nJxuHO5ScnSwTC3ZfkxT6uBoXzo39AZ7BB668CGIdfoxtSCAR90gS','DOCENTE',1,0,'2026-10-29 00:32:02'),(4,'AUX-77777777','$2b$12$jnAoMuiAIlv.wcyuVuuKauiBo9GD0pUxXFQVW42Q5NqRwridmohk6','AUXILIAR',1,0,'2026-10-29 00:32:02'),(5,'PSI-88888888','$2b$12$vrMm1cmdkZQKhifohzhCaOr.TtzTM6UMPnQAng6PHLreL8yZHy4O2','PSICOLOGO',1,0,'2026-10-29 00:32:02'),(6,'ALU-33333333','$2b$12$hUNPkC7VEUPhvJ2TTL226OY/uLennmwCuX.xrtV1x2UVrKvDbyRTy','ALUMNO',1,0,'2026-10-29 00:32:03'),(7,'ALU-44444444','$2b$12$GvNrk.IUaHfE54jq04/uf.VeLSh3G6k.Ztzo18Zlpc/qqA1iaoJCW','ALUMNO',1,1,'2026-10-29 00:32:03'),(8,'ALU-71111111','$2b$12$CVYaENL8Vr810qRoCTbPgep1EamiwvdAtZXajmuk.uy4ZuX5pDwK6','ALUMNO',1,0,'2026-10-29 00:32:03'),(9,'ALU-72222222','$2b$12$fOZzlC0sKhZKsdUs.W2lnuRKkZOtatkYxdc1gFcg206TjHKcE44mK','ALUMNO',1,0,'2026-10-29 00:32:03'),(10,'ALU-73333333','$2b$12$TrBeAEqW6w6XjauJJuHMe.puXCXOWgWWyLlawsZ7GauVheJRJAqEW','ALUMNO',1,0,'2026-10-29 00:32:03'),(11,'ALU-74444444','$2b$12$EGT50M8TVjNrJpUh/5ei8.POFli/KR9/KQStzao9Q/qp1hFU92CBq','ALUMNO',1,0,'2026-10-29 00:32:03'),(12,'ALU-75555555','$2b$12$0jM94Wp1RDob1lSs8oon6egqsZZA1b6kUxtoX4Dc/CylqbI4BpMOC','ALUMNO',1,0,'2026-10-29 00:32:04'),(13,'ALU-76666666','$2b$12$r2vI0Lt.2MPyXg1h/0BMr.kglPNp7Zj9KlC1fluddupMR3EKgZLKq','ALUMNO',1,0,'2026-10-29 00:32:04'),(14,'ALU-79999999','$2b$12$Q/qRsNvidyxUYRkETBa1Z.UuCFOqJcXyzyP9YYX9G.kdpQgwHrBK6','ALUMNO',1,0,'2026-10-29 00:32:04');
+INSERT INTO `usuario` VALUES (1,'ADM-11111111','$2b$12$o7EKhzvn5s2RAfoLZ55tBeQsEK3iZsXdRMR8Xts1O5CyVdWkTCzXa','ADMIN',1,0,'2026-11-14 10:38:09'),(2,'DOC-22222222','$2b$12$HBHC/EQoEzR6K0hEv/NaG.VFqrLgZxihnq2YYTkea3cm8ENBIuAku','DOCENTE',1,0,'2026-11-14 10:38:09'),(3,'DOC-66666666','$2b$12$H7ZKS75v2jYmC/pC0jmuBOtQ3XE25MnKs7ff4pZDEqbTpDtFi0oPe','DOCENTE',1,0,'2026-11-14 10:38:09'),(4,'AUX-77777777','$2b$12$6K515yN19mthuaWsWryFCeq54ktxD.C5cN8MSTD7QD8.XTBHvQ.qW','AUXILIAR',1,0,'2026-11-14 10:38:09'),(5,'PSI-88888888','$2b$12$Fpkt8jfrW/tTei6xMSGYZ.eme.gPP7gqgf6hTevqpOFZcRGY2ABrK','PSICOLOGO',1,0,'2026-11-14 10:38:09'),(6,'ALU-33333333','$2b$12$OpVZPCyjUiv76ON380L4eeaiBXxFKC4XOmSo6OiBAFD5H27fqBFyC','ALUMNO',1,0,'2026-11-14 10:38:09'),(7,'ALU-44444444','$2b$12$cAG/jasBHxXlQj1OyGMPDOQ9CVve6x5KNA8R0AH9wLbsPQJusEoVW','ALUMNO',1,1,'2026-11-14 10:38:10'),(8,'ALU-71111111','$2b$12$88f3FreYjwmjp2shKP..K.7JTlt91KPoeBzEf5O25WRDbcChbtbHW','ALUMNO',1,0,'2026-11-14 10:38:10'),(9,'ALU-72222222','$2b$12$eiLsuW.03Tl2uI7Ooehm9.fHOE1d3pAgY45xJWmhRCEXo36Ho7Ju6','ALUMNO',1,0,'2026-11-14 10:38:10'),(10,'ALU-73333333','$2b$12$WLl59hxAaQAebHe86PJwDOjgoI9dDNaZlKPCbdcqNw/9Z/OXCE93y','ALUMNO',1,0,'2026-11-14 10:38:10'),(11,'ALU-74444444','$2b$12$3NHCMn6ecorIq7SNGwSm9.vnnhAkNNUE.sCzd3FfkPLnJYQHqdGUa','ALUMNO',1,0,'2026-11-14 10:38:10'),(12,'ALU-75555555','$2b$12$UpBOSYm3yzH/h4QgHQbHDuLlhGqc3gt/ogQniJZQWg2yMcd/7cfP2','ALUMNO',1,0,'2026-11-14 10:38:10'),(13,'ALU-76666666','$2b$12$Inb9fe2lEt8Mslrs8szBauuABb6uAKm9Zh7bcVkmXwGGkGRGvQJXq','ALUMNO',1,0,'2026-11-14 10:38:10'),(14,'ALU-79999999','$2b$12$BZ1r/ENyCJptJ4AvAFBo..aCGrDTQmoptJ261GPZAg5sfSYisx33G','ALUMNO',1,0,'2026-11-14 10:38:11');
 /*!40000 ALTER TABLE `usuario` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Dumping routines for database 'amancio_app_movil'
+--
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

@@ -195,6 +195,25 @@ Además: una **conversación** entre Lucía y el profesor Carlos (el último men
 **notificaciones** de ejemplo y una **operación hecha sin conexión** ya sincronizada
 (la entrega de Sofía, id `demo-offline-sofia-0001`).
 
+**Demo completa** (para mostrar cada apartado de la app con datos). Usa fechas
+**relativas al día en que se cargan** (ayer, mañana, en 5 días…):
+
+| Apartado | Qué hay |
+|---|---|
+| Cursos | Tareas, materiales y clases virtuales en los 3 cursos de 3ro A y en 1ro A; clases virtuales en los próximos días |
+| Entregas | Calificadas y **por calificar** para Carlos y María |
+| Notas | Ciencia y Tecnología de 3ro A, los 3 cursos de Mateo y la "Práctica 1" del 4.º bimestre (abierto) |
+| Asistencia | Los últimos 8 días hábiles; **hoy queda pendiente** para registrarla en vivo |
+| Conducta | Reportes de varios alumnos: uno de **hoy**, uno grave y uno **anulado** |
+| Citas | Una **hoy** (Sofía), una en dos días (Diego), una solicitud nueva (Valeria), una cancelada y un seguimiento de Lucía |
+| Mensajes y avisos | Conversaciones para todos los roles, cada uno con mensajes y avisos sin leer |
+| Perfil | Fecha de nacimiento y un apoderado para cada alumno |
+
+En una base que ya tenía la demo mínima basta con `flask --app run datos-prueba` (solo agrega
+lo que falta). Como las fechas son relativas, **el día de la presentación conviene volver a
+crear la base** para que "hoy" y "mañana" coincidan: borrar la base, `flask --app run crear-tablas`
+y `flask --app run datos-prueba`.
+
 **Primer ingreso:** el login devuelve `debe_cambiar_password`. Si es `true`, la app
 obliga a cambiar la contraseña (la inicial es el DNI) con `POST /perfil/auth/change-password`,
 que la apaga. La nueva clave no puede ser el DNI.

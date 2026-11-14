@@ -27,11 +27,16 @@ Sofía entregó tarde y falta calificar, el resto no entregó) y otra con fecha 
 MENSAJES: una conversación entre Lucía y el profesor Carlos (el último mensaje, sin leer).
 NOTIFICACIONES de ejemplo y una OPERACIÓN SIN CONEXIÓN ya sincronizada (la entrega de Sofía).
 
+DEMO COMPLETA (sección 14): además hay datos en TODOS los apartados, con fechas relativas
+a hoy: tareas, materiales y clases virtuales en los 3 cursos (también en 1ro A), notas
+del 4.º bimestre, asistencia de los últimos 8 días hábiles, reportes (uno de hoy y uno
+anulado), citas (una HOY), varias conversaciones y avisos sin leer para cada rol.
+
 PRIMER INGRESO: Mateo tiene `debe_cambiar_password = 1` (aún usa su DNI y la app
 le obliga a cambiarla). Las demás cuentas están marcadas como si ya la hubieran
 cambiado, para poder probar sin ese paso.
 """
-from datetime import date
+from datetime import date, timedelta
 
 from app.database import consultar_todos, consultar_uno, ejecutar, get_db, insertar
 from app.repositories import cursos_repository, nota_repository
@@ -84,6 +89,7 @@ def cargar_datos_prueba() -> list[str]:
         creados += _mensajes()
         creados += _notificaciones()
         creados += _operacion_offline()
+        creados += _demo_completa()
         db.commit()
         return creados
     except Exception:
@@ -565,3 +571,394 @@ def _operacion_offline() -> list[str]:
     """, (_id_usuario("ALU-71111111"), f"/tareas/item/{tarea}/entregar",
           '{"fuera_de_plazo":true,"message":"Tarea entregada"}'))
     return ["1 operación sin conexión"]
+
+
+# =============================================================================
+# 14. Demo completa: datos en TODOS los apartados de la app
+# =============================================================================
+#
+# Lo de arriba deja la demo mínima. Esto la completa para que cada pantalla de cada
+# usuario tenga algo que mostrar: tareas y materiales en los tres cursos, notas del
+# 4.º bimestre, asistencia de los últimos días, reportes, citas (una HOY), varias
+# conversaciones y avisos para todos los roles.
+#
+# Usa fechas RELATIVAS a hoy (ayer, mañana, en 5 días...) para que la demo siempre se
+# vea "al día". Se agrega una sola vez: la marca es la tarea "Ensayo: mi lugar favorito".
+# En una base que ya tiene la demo mínima basta con: flask --app run datos-prueba
+
+MARCA_DEMO_COMPLETA = "Ensayo: mi lugar favorito"
+
+
+def _cuando(dias: int, hora: str) -> str:
+    """Fecha y hora relativa a hoy: _cuando(-1, "18:20") = ayer a las 18:20."""
+    return f"{(date.today() + timedelta(days=dias)).isoformat()} {hora}:00"
+
+
+def _dias_habiles_anteriores(cantidad: int) -> list:
+    """Los últimos `cantidad` días de lunes a viernes, sin contar hoy (del más antiguo al más nuevo)."""
+    dias, dia = [], date.today()
+    while len(dias) < cantidad:
+        dia -= timedelta(days=1)
+        if dia.weekday() < 5:
+            dias.append(dia)
+    return sorted(dias)
+
+
+def _id_matricula(username: str):
+    return _id("SELECT id_matricula FROM matricula WHERE id_alumno = %s AND id_anio_escolar = %s",
+               (_id_alumno(username), ANIO))
+
+
+def _id_falta(nombre: str):
+    return _id("SELECT id_nivel_conducta FROM nivel_conducta WHERE nombre = %s", (nombre,))
+
+
+def _id_tarea(titulo: str):
+    return _id("SELECT id_tarea FROM tarea WHERE titulo = %s", (titulo,))
+
+
+def _demo_completa() -> list[str]:
+    if _id_tarea(MARCA_DEMO_COMPLETA):
+        return []
+    _demo_perfiles()
+    _demo_notas()
+    _demo_aula_virtual()
+    _demo_asistencia()
+    _demo_conducta()
+    _demo_citas()
+    _demo_mensajes()
+    _demo_notificaciones()
+    return ["demo completa (datos en todos los apartados)"]
+
+
+def _demo_perfiles() -> None:
+    """Datos personales y un apoderado para cada alumno (se ven en "Mi perfil")."""
+    nacimientos = {"ALU-33333333": "2011-05-14", "ALU-44444444": "2013-08-02",
+                   "ALU-71111111": "2011-02-27", "ALU-72222222": "2011-11-09",
+                   "ALU-73333333": "2011-07-19", "ALU-74444444": "2011-03-30",
+                   "ALU-75555555": "2011-09-05", "ALU-76666666": "2011-12-12",
+                   "ALU-79999999": "2011-06-21"}
+    for username, nacimiento in nacimientos.items():
+        ejecutar("""
+            UPDATE alumno SET fecha_nacimiento = COALESCE(fecha_nacimiento, %s),
+                              talla_polo = COALESCE(talla_polo, 'M'),
+                              colegio_procedencia = COALESCE(colegio_procedencia, 'I.E. Santa Rosa')
+            WHERE id_alumno = %s
+        """, (nacimiento, _id_alumno(username)))
+    ejecutar("UPDATE alumno SET enfermedad = 'Asma leve (usa inhalador)' "
+             "WHERE id_alumno = %s AND enfermedad IS NULL", (_id_alumno("ALU-33333333"),))
+
+    # Un apoderado para los alumnos que aún no tienen (Lucía y Mateo ya tienen a Rosa).
+    familiares = {
+        "ALU-71111111": ("41234567", "Patricia", "Torres Vega", "941234567"),
+        "ALU-72222222": ("42345678", "Luis", "Castillo Pérez", "942345678"),
+        "ALU-73333333": ("43456789", "Gloria", "Rojas Díaz", "943456789"),
+        "ALU-74444444": ("44567890", "Martín", "Paredes Luna", "944567890"),
+        "ALU-75555555": ("45678901", "Silvia", "Medina Cruz", "945678901"),
+        "ALU-76666666": ("46789012", "Raúl", "Vargas Soto", "946789012"),
+        "ALU-79999999": ("47890123", "Carmen", "Cárdenas Ruiz", "947890123"),
+    }
+    for username, (dni, nombres, apellidos, telefono) in familiares.items():
+        id_familiar = _id("SELECT id_familiar FROM familiar WHERE dni = %s", (dni,))
+        if id_familiar is None:
+            correo = f"{nombres.lower()}.{apellidos.split()[0].lower()}@example.com"
+            id_familiar = insertar("""
+                INSERT INTO familiar (dni, nombres, apellidos, telefono, email, direccion)
+                VALUES (%s, %s, %s, %s, %s, 'Calle Real 456, Tumán')
+            """, (dni, nombres, apellidos, telefono, correo))
+        ejecutar("UPDATE alumno SET id_familiar = %s WHERE id_alumno = %s AND id_familiar IS NULL",
+                 (id_familiar, _id_alumno(username)))
+
+
+def _guardar_notas(carga: dict, alumnos: dict, bimestres, evaluaciones: dict, ajuste_curso: int) -> None:
+    """Notas de varios alumnos (nota = nivel del alumno + ajustes, siempre entre 0 y 20)."""
+    for bimestre in bimestres:
+        for evaluacion, ajuste_eval in evaluaciones.items():
+            for username, nivel in alumnos.items():
+                valor = max(0, min(20, nivel + ajuste_curso + ajuste_eval + (bimestre - 2)))
+                nota_repository.guardar_nota(_id_matricula(username), carga["id_curso"], bimestre,
+                                             evaluacion, valor)
+
+
+def _cerrar(carga: dict, bimestres, docente: str) -> None:
+    """Cierra los bimestres indicados (si aún no lo estaban), igual que el endpoint."""
+    for bimestre in bimestres:
+        if bimestre not in nota_repository.bimestres_cerrados(carga["id_carga_academica"]):
+            nota_service.aplicar_cierre(carga, bimestre, _id_usuario(docente))
+
+
+def _demo_notas() -> None:
+    """Ciencia y Tecnología de 3ro A, los tres cursos de 1ro A (Mateo) y la
+    "Práctica 1" del 4.º bimestre (el que está en curso) en todos los cursos."""
+    base_3a = dict(zip(ALUMNOS_3RO_A, (16, 13, 10, 18, 12, 15, 9, 14)))
+    dos_evaluaciones = {"Práctica 1": 0, "Examen": 1}
+
+    cyt_3a = cursos_repository.buscar_carga(_id_carga("Ciencia y Tecnología", "3ro", "A"))
+    _guardar_notas(cyt_3a, base_3a, (1, 2, 3), dos_evaluaciones, ajuste_curso=1)
+    _cerrar(cyt_3a, (1, 2), "DOC-66666666")
+
+    docentes = {"Matemática": "DOC-22222222", "Comunicación": "DOC-66666666",
+                "Ciencia y Tecnología": "DOC-66666666"}
+    for curso, docente in docentes.items():
+        carga_1a = cursos_repository.buscar_carga(_id_carga(curso, "1ro", "A"))
+        _guardar_notas(carga_1a, {"ALU-44444444": 14}, (1, 2, 3), dos_evaluaciones, ajuste_curso=0)
+        _cerrar(carga_1a, (1, 2), docente)
+        _guardar_notas(carga_1a, {"ALU-44444444": 14}, (4,), {"Práctica 1": 0}, ajuste_curso=0)
+        carga_3a = cursos_repository.buscar_carga(_id_carga(curso, "3ro", "A"))
+        _guardar_notas(carga_3a, base_3a, (4,), {"Práctica 1": 0}, ajuste_curso=0)
+
+
+def _demo_aula_virtual() -> None:
+    """Materiales, tareas (con entregas) y clases virtuales en los cursos de María y de 1ro A."""
+    com_3a = _id_carga("Comunicación", "3ro", "A")
+    cyt_3a = _id_carga("Ciencia y Tecnología", "3ro", "A")
+    mat_3a = _id_carga("Matemática", "3ro", "A")
+    mat_1a = _id_carga("Matemática", "1ro", "A")
+
+    materiales = [   # (carga, título, descripción, enlace, bimestre)
+        (com_3a, "Plan lector: El caballero Carmelo", "Cuento completo de Abraham Valdelomar.",
+         "https://example.com/caballero-carmelo.pdf", 4),
+        (com_3a, "Guía para escribir un ensayo", "Estructura: introducción, desarrollo y conclusión.",
+         "https://example.com/guia-ensayo.pdf", 4),
+        (cyt_3a, "La célula: partes y funciones", "Infografía y video de repaso.",
+         "https://example.com/la-celula", 3),
+        (cyt_3a, "Guía de laboratorio: densidad", "Materiales y pasos del experimento.",
+         "https://example.com/lab-densidad.pdf", 4),
+        (mat_3a, "Funciones lineales", "Teoría, gráficas y ejercicios resueltos.",
+         "https://example.com/funciones-lineales.pdf", 4),
+        (mat_1a, "Fracciones equivalentes", "Ficha de práctica con 15 ejercicios.",
+         "https://example.com/fracciones.pdf", 4),
+    ]
+    for carga, titulo, descripcion, enlace, bimestre in materiales:
+        insertar("""INSERT INTO material_clase (id_carga_academica, titulo, descripcion, archivo_url, bimestre)
+                    VALUES (%s, %s, %s, %s, %s)""", (carga, titulo, descripcion, enlace, bimestre))
+
+    tareas = [   # (carga, título, descripción, publicada hace N días, vence en N días)
+        (com_3a, MARCA_DEMO_COMPLETA, "Ensayo de 2 páginas sobre un lugar o una persona especial.", -2, 5),
+        (com_3a, "Ficha de lectura: El caballero Carmelo", "Completa la ficha: personajes, tema y mensaje.", -14, -6),
+        (cyt_3a, "Informe de laboratorio: densidad", "Informe con tus mediciones y conclusiones.", -1, 9),
+        (cyt_3a, "Cuestionario: la célula", "Responde las 12 preguntas del cuestionario.", -16, -12),
+        (mat_1a, "Fracciones: ejercicios", "Resolver la ficha de fracciones equivalentes.", -1, 3),
+    ]
+    for carga, titulo, descripcion, publicada, vence in tareas:
+        insertar("""
+            INSERT INTO tarea (id_carga_academica, titulo, descripcion, fecha_publicacion, fecha_entrega,
+                               bimestre, estado, tipo_evaluacion, peso)
+            VALUES (%s, %s, %s, %s, %s, 4, 'ACTIVO', 'TAREA', 0)
+        """, (carga, titulo, descripcion, _cuando(publicada, "08:00"), _cuando(vence, "23:59")))
+
+    entregas = [   # (tarea, alumno, enviada hace N días, nota, comentario del docente)
+        ("Ficha de lectura: El caballero Carmelo", "ALU-33333333", -8, 18, "Muy buena identificación del tema."),
+        ("Ficha de lectura: El caballero Carmelo", "ALU-73333333", -9, 19, "¡Excelente análisis!"),
+        ("Ficha de lectura: El caballero Carmelo", "ALU-75555555", -7, 14, "Completa la sección del mensaje."),
+        ("Ficha de lectura: El caballero Carmelo", "ALU-71111111", -7, None, None),   # por calificar
+        ("Ficha de lectura: El caballero Carmelo", "ALU-74444444", -4, None, None),   # tarde, por calificar
+        ("Cuestionario: la célula", "ALU-33333333", -13, 16, "Bien, repasa la mitocondria."),
+        ("Cuestionario: la célula", "ALU-72222222", -13, 11, "Faltaron 4 preguntas."),
+        ("Cuestionario: la célula", "ALU-79999999", -12, None, None),                 # por calificar
+        (MARCA_DEMO_COMPLETA, "ALU-73333333", -1, None, None),                        # por calificar
+        ("Proyecto: sistemas de ecuaciones", "ALU-73333333", -2, None, None),         # por calificar (Carlos)
+        ("Proyecto: sistemas de ecuaciones", "ALU-76666666", -1, None, None),
+    ]
+    for titulo, username, enviada, nota, comentario in entregas:
+        id_tarea = _id_tarea(titulo)
+        insertar("""
+            INSERT INTO entrega_tarea (id_tarea, id_alumno, archivo_url, fecha_envio, calificacion,
+                                       retroalimentacion_docente)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (id_tarea, _id_alumno(username), f"https://drive.google.com/{username.lower()}-tarea-{id_tarea}",
+              _cuando(enviada, "19:00"), nota, comentario))
+
+    clases = [   # (carga, tema, en N días, hora)
+        (mat_3a, "Funciones lineales: resolución de dudas", 1, "16:00"),
+        (com_3a, "Taller de redacción del ensayo", 2, "15:00"),
+        (cyt_3a, "Laboratorio virtual: densidad", 4, "16:30"),
+        (mat_1a, "Repaso de fracciones", 3, "15:30"),
+        (com_3a, "Análisis de El caballero Carmelo", -5, "15:00"),
+    ]
+    for carga, tema, dias, hora in clases:
+        insertar("""INSERT INTO clase_virtual (id_carga_academica, tema, fecha, enlace)
+                    VALUES (%s, %s, %s, 'https://meet.google.com/amv-demo-clase')""",
+                 (carga, tema, _cuando(dias, hora)))
+
+
+def _demo_asistencia() -> None:
+    """Asistencia de los últimos 8 días hábiles en 3ro A y 1ro A. HOY queda pendiente,
+    para que el auxiliar pueda registrarla durante la demostración."""
+    # Un texto por día con el estado de los 8 alumnos de 3ro A (orden de ALUMNOS_3RO_A).
+    estados_3a = ["PPPPPPPP", "PTPPPPPF", "PPFPPPPP", "PPPTPPPP",
+                  "PPPPPJPP", "TPPPFPPP", "PPPPPPTP", "PPFPPPPP"]
+    estados_mateo = "PPTPPPPP"
+    for i, dia in enumerate(_dias_habiles_anteriores(8)):
+        del_dia = list(zip(ALUMNOS_3RO_A, estados_3a[i])) + [("ALU-44444444", estados_mateo[i])]
+        for username, estado in del_dia:
+            id_matricula = _id_matricula(username)
+            if _id("SELECT COUNT(*) FROM asistencia WHERE id_matricula = %s AND fecha = %s",
+                   (id_matricula, dia)):
+                continue
+            insertar("INSERT INTO asistencia (id_matricula, fecha, estado) VALUES (%s, %s, %s)",
+                     (id_matricula, dia, estado))
+
+
+def _demo_conducta() -> None:
+    """Reportes de varios alumnos: uno de HOY, uno grave y uno ANULADO."""
+    auxiliar = _id_usuario("AUX-77777777")
+    reportes = [   # (alumno, falta, hace N días, hora, descripción)
+        ("ALU-71111111", "Tardanza injustificada", 0, "07:55", "Llegó 15 minutos tarde a la formación."),
+        ("ALU-72222222", "Falta de respeto a un compañero", -3, "11:00",
+         "Insultó a un compañero durante la clase de Matemática."),
+        ("ALU-76666666", "No portar el uniforme completo", -7, "07:50", "Vino con zapatillas de color."),
+        ("ALU-44444444", "Tardanza injustificada", -2, "08:05", "Llegó después del inicio de clases."),
+    ]
+    for username, falta, dias, hora, descripcion in reportes:
+        insertar("""
+            INSERT INTO reporte_conducta (id_alumno, id_nivel_conducta, registrado_por, fecha_reporte,
+                                          descripcion_suceso, estado)
+            VALUES (%s, %s, %s, %s, %s, 'REGISTRADO')
+        """, (_id_alumno(username), _id_falta(falta), auxiliar, _cuando(dias, hora), descripcion))
+
+    # Un reporte anulado (en la app se ve tachado, con el motivo).
+    insertar("""
+        INSERT INTO reporte_conducta (id_alumno, id_nivel_conducta, registrado_por, fecha_reporte,
+                                      descripcion_suceso, estado, motivo_anulacion, anulado_por,
+                                      fecha_anulacion)
+        VALUES (%s, %s, %s, %s, 'Usaba el celular durante la clase de Ciencia.', 'ANULADO',
+                'Tenía permiso de la docente para usar la calculadora del celular.', %s, %s)
+    """, (_id_alumno("ALU-74444444"), _id_falta("Uso del celular en clase"), auxiliar,
+          _cuando(-5, "10:30"), auxiliar, _cuando(-5, "12:00")))
+
+
+def _demo_citas() -> None:
+    """Una cita HOY, una en dos días, una solicitud nueva, una cancelada y un seguimiento."""
+    psicologo = _id("""SELECT p.id_psicologo FROM psicologo p JOIN usuario u ON u.id_usuario = p.id_usuario
+                       WHERE u.username = 'PSI-88888888'""")
+    # (alumno, motivo, disponibilidad, solicitada hace N días, fecha de la cita, estado,
+    #  observación, motivo de cancelación)
+    citas = [
+        ("ALU-71111111", "Me cuesta llegar temprano porque cuido a mi hermano", "Mañanas",
+         -3, _cuando(0, "11:30"), "PROGRAMADA", None, None),
+        ("ALU-72222222", "Tuve un problema con un compañero y quiero arreglarlo", "Después del recreo",
+         -2, _cuando(2, "10:00"), "PROGRAMADA", None, None),
+        ("ALU-73333333", "Me siento muy estresada por los exámenes", "Viernes por la tarde",
+         -1, None, "PENDIENTE", None, None),
+        ("ALU-76666666", "Quiero orientación para organizar mis tareas", "Lunes",
+         -9, _cuando(-4, "09:00"), "CANCELADA", None,
+         "El estudiante viajó con su familia; se reprogramará a su regreso."),
+        ("ALU-33333333", "Seguimiento de concentración en clase", "Mañanas",
+         -14, _cuando(-11, "10:00"), "ATENDIDA",
+         "Mejoró su organización y mantiene su horario de estudio. Nuevo seguimiento en diciembre.", None),
+    ]
+    for username, motivo, disponibilidad, solicitada, fecha_cita, estado, observacion, cancelacion in citas:
+        id_alumno = _id_alumno(username)
+        activas = _id("""SELECT COUNT(*) FROM cita_psicologia
+                         WHERE id_alumno = %s AND estado IN ('PENDIENTE', 'PROGRAMADA')""", (id_alumno,))
+        if activas and estado in ("PENDIENTE", "PROGRAMADA"):
+            continue    # regla del colegio: solo una cita activa por alumno
+        insertar("""
+            INSERT INTO cita_psicologia (id_alumno, id_psicologo, motivo, disponibilidad, fecha_cita, estado,
+                                         observacion, motivo_cancelacion, fecha_solicitud)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (id_alumno, None if estado == "PENDIENTE" else psicologo, motivo, disponibilidad,
+              fecha_cita, estado, observacion, cancelacion, _cuando(solicitada, "08:30")))
+
+
+def _conversacion(usuario_a: str, usuario_b: str, mensajes: list) -> None:
+    """Crea una conversación con sus mensajes: [(remitente, texto, hace N días, hora, leído)]."""
+    a, b = _id_usuario(usuario_a), _id_usuario(usuario_b)
+    ultimo = mensajes[-1]
+    id_conversacion = insertar("""
+        INSERT INTO conversacion (usuario1_id, usuario2_id, ultimo_mensaje, fecha_actualizacion)
+        VALUES (%s, %s, %s, %s)
+    """, (min(a, b), max(a, b), ultimo[1], _cuando(ultimo[2], ultimo[3])))
+    for remitente, texto, dias, hora, leido in mensajes:
+        insertar("""INSERT INTO mensaje (id_conversacion, remitente_id, contenido, leido, fecha_envio)
+                    VALUES (%s, %s, %s, %s, %s)""",
+                 (id_conversacion, _id_usuario(remitente), texto, leido, _cuando(dias, hora)))
+
+
+def _demo_mensajes() -> None:
+    """Conversaciones para todos los roles; cada uno tiene al menos un mensaje sin leer."""
+    _conversacion("ALU-33333333", "DOC-66666666", [
+        ("ALU-33333333", "Profesora, ¿el ensayo puede ser sobre mi abuela?", -1, "18:20", 1),
+        ("DOC-66666666", "¡Claro, Lucía! Puede ser sobre una persona especial. Mínimo 2 páginas.", -1, "19:05", 0),
+    ])
+    _conversacion("ALU-71111111", "PSI-88888888", [
+        ("PSI-88888888", "Hola, Sofía. Tu cita quedó para hoy a las 11:30 en el tópico.", -1, "09:00", 1),
+        ("ALU-71111111", "Gracias, ahí estaré.", -1, "09:30", 1),
+    ])
+    _conversacion("AUX-77777777", "DOC-22222222", [
+        ("AUX-77777777", "Profesor, Diego tuvo un reporte por faltarle el respeto a un compañero en su clase.",
+         -3, "12:00", 1),
+        ("DOC-22222222", "Gracias, Jorge. Conversaré con él y con su apoderado.", -3, "12:30", 0),
+    ])
+    _conversacion("ADM-11111111", "DOC-22222222", [
+        ("ADM-11111111", "Carlos, recuerda cerrar el 3.er bimestre de Matemática esta semana.", 0, "08:00", 0),
+    ])
+    _conversacion("ALU-73333333", "PSI-88888888", [
+        ("ALU-73333333", "Hola, envié una solicitud de cita. ¿Cuándo podría atenderme?", -1, "20:00", 0),
+    ])
+    _conversacion("ALU-44444444", "DOC-22222222", [
+        ("ALU-44444444", "Profesor, ¿las fracciones se simplifican al final?", -1, "17:10", 1),
+        ("DOC-22222222", "Sí, Mateo. Siempre deja el resultado en su mínima expresión.", -1, "17:45", 0),
+    ])
+
+
+def _demo_notificaciones() -> None:
+    """Avisos sin leer para cada rol (en la app real los crean los services)."""
+    ensayo = _id_tarea(MARCA_DEMO_COMPLETA)
+    ficha = _id_tarea("Ficha de lectura: El caballero Carmelo")
+    fracciones = _id_tarea("Fracciones: ejercicios")
+    clase = _id("SELECT MAX(id_clase_virtual) FROM clase_virtual WHERE tema = 'Funciones lineales: resolución de dudas'")
+
+    def ultima_cita(username):
+        return _id("SELECT MAX(id_cita) FROM cita_psicologia WHERE id_alumno = %s", (_id_alumno(username),))
+
+    def conversacion_entre(usuario_a, usuario_b):
+        a, b = _id_usuario(usuario_a), _id_usuario(usuario_b)
+        return _id("SELECT id_conversacion FROM conversacion WHERE usuario1_id = %s AND usuario2_id = %s",
+                   (min(a, b), max(a, b)))
+
+    avisos = [   # (usuario, tipo, título, mensaje, referencia, leída, hace N días, hora)
+        ("ALU-33333333", "CLASE", "Nueva clase virtual de Matemática",
+         "Funciones lineales: resolución de dudas · mañana 16:00", clase, 0, -1, "10:00"),
+        ("ALU-33333333", "MENSAJE", "Mensaje de María Salazar Vega",
+         "¡Claro, Lucía! Puede ser sobre una persona especial.",
+         conversacion_entre("ALU-33333333", "DOC-66666666"), 0, -1, "19:05"),
+        ("ALU-33333333", "CALIFICACION", "Tu tarea fue calificada",
+         "Ficha de lectura: El caballero Carmelo: 18", ficha, 1, -6, "09:00"),
+        ("ALU-71111111", "CITA", "Cita programada", "Tu cita con psicología es hoy a las 11:30",
+         ultima_cita("ALU-71111111"), 0, -1, "09:00"),
+        ("ALU-71111111", "CONDUCTA", "Nuevo reporte de conducta", "Tardanza injustificada (−1 punto)",
+         None, 0, 0, "08:00"),
+        ("ALU-72222222", "CITA", "Cita programada", "Tu cita con psicología es en dos días a las 10:00",
+         ultima_cita("ALU-72222222"), 0, -2, "12:00"),
+        ("ALU-72222222", "CONDUCTA", "Nuevo reporte de conducta", "Falta de respeto a un compañero (−5 puntos)",
+         None, 1, -3, "11:05"),
+        ("ALU-73333333", "CALIFICACION", "Tu tarea fue calificada",
+         "Ficha de lectura: El caballero Carmelo: 19", ficha, 0, -6, "09:00"),
+        ("ALU-44444444", "TAREA", "Nueva tarea de Matemática", "Fracciones: ejercicios · entrega en 3 días",
+         fracciones, 0, -1, "08:00"),
+        ("DOC-22222222", "MENSAJE", "Mensaje de Ana Torres Ruiz",
+         "Carlos, recuerda cerrar el 3.er bimestre de Matemática esta semana.",
+         conversacion_entre("ADM-11111111", "DOC-22222222"), 0, 0, "08:00"),
+        ("AUX-77777777", "MENSAJE", "Mensaje de Carlos Mendoza Paz",
+         "Gracias, Jorge. Conversaré con él y con su apoderado.",
+         conversacion_entre("AUX-77777777", "DOC-22222222"), 0, -3, "12:30"),
+        ("PSI-88888888", "CITA", "Nueva solicitud de cita",
+         "Valeria Huamán Rojas: Me siento muy estresada por los exámenes",
+         ultima_cita("ALU-73333333"), 0, -1, "08:30"),
+        ("PSI-88888888", "MENSAJE", "Mensaje de Valeria Huamán Rojas",
+         "Hola, envié una solicitud de cita. ¿Cuándo podría atenderme?",
+         conversacion_entre("ALU-73333333", "PSI-88888888"), 0, -1, "20:00"),
+        ("ADM-11111111", "LIBRETA", "Bimestre cerrado",
+         "Matemática 3ro A: el 2.º bimestre ya está en la libreta", None, 1, -10, "18:00"),
+    ]
+    # La nueva tarea de Comunicación se avisó a toda la sección.
+    avisos += [(username, "TAREA", "Nueva tarea de Comunicación",
+                f"{MARCA_DEMO_COMPLETA} · entrega en 5 días", ensayo, 0, -2, "08:00")
+               for username in ALUMNOS_3RO_A]
+    for username, tipo, titulo, mensaje, referencia, leida, dias, hora in avisos:
+        insertar("""
+            INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, id_referencia, leida, fecha)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (_id_usuario(username), tipo, titulo, mensaje, referencia, leida, _cuando(dias, hora)))
