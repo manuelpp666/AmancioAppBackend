@@ -1,4 +1,4 @@
-"""Reglas de las notificaciones.
+﻿"""Reglas de las notificaciones.
 
 Cómo se crea una notificación:
 1. Un service hace algo que le interesa a alguien (el docente publica una tarea,
@@ -25,28 +25,44 @@ log = logging.getLogger(__name__)
 # --- Crear notificaciones (las usan los otros services) --------------------------
 
 def notificar(id_usuarios: list, tipo: str, titulo: str, mensaje: str, id_referencia=None) -> int:
-    """Guarda la misma notificación para varios usuarios. NO hace commit: va dentro
-    de la transacción del service que la llama. Devuelve cuántas creó."""
-    id_usuarios = [i for i in dict.fromkeys(id_usuarios) if i is not None]   # sin repetidos
-    for id_usuario in id_usuarios:
-        notificacion_repository.crear(id_usuario, tipo, titulo, mensaje[:300], id_referencia)
-    if id_usuarios:
-        # Se anota para enviar el push al final de la petición (si terminó bien).
-        g.setdefault("push_pendientes", []).append(
-            {"usuarios": id_usuarios, "titulo": titulo, "mensaje": mensaje,
-             "datos": {"tipo": tipo, "id_referencia": id_referencia}})
-    return len(id_usuarios)
+    """Guarda la misma notificación para varios usuarios.
+    Está envuelta en try/except para que un fallo en la creación de notificaciones
+    NUNCA bloquee el flujo principal de la operación (crear tarea, calificación, etc.)."""
+    try:
+        id_usuarios = [i for i in dict.fromkeys(id_usuarios) if i is not None]   # sin repetidos
+        for id_usuario in id_usuarios:
+            try:
+                notificacion_repository.crear(id_usuario, tipo, titulo, mensaje[:300], id_referencia)
+            except Exception as e_fila:
+                log.warning("No se pudo crear notificación individual para usuario %s: %s", id_usuario, e_fila)
+        if id_usuarios:
+            # Se anota para enviar el push al final de la petición (si terminó bien).
+            g.setdefault("push_pendientes", []).append(
+                {"usuarios": id_usuarios, "titulo": titulo, "mensaje": mensaje,
+                 "datos": {"tipo": tipo, "id_referencia": id_referencia}})
+        return len(id_usuarios)
+    except Exception as error:
+        log.warning("Error no bloqueante al crear notificaciones: %s", error)
+        return 0
 
 
 def notificar_seccion(carga: dict, tipo: str, titulo: str, mensaje: str, id_referencia=None) -> int:
     """Avisa a todos los alumnos de la sección de un curso."""
-    alumnos = notificacion_repository.usuarios_de_seccion(carga["id_seccion"], carga["anio"])
-    return notificar(alumnos, tipo, titulo, mensaje, id_referencia)
+    try:
+        alumnos = notificacion_repository.usuarios_de_seccion(carga["id_seccion"], carga["anio"])
+        return notificar(alumnos, tipo, titulo, mensaje, id_referencia)
+    except Exception as error:
+        log.warning("Error no bloqueante al obtener alumnos de la sección: %s", error)
+        return 0
 
 
 def notificar_alumno(id_alumno: int, tipo: str, titulo: str, mensaje: str, id_referencia=None) -> int:
-    return notificar([notificacion_repository.usuario_de_alumno(id_alumno)], tipo, titulo,
-                     mensaje, id_referencia)
+    try:
+        return notificar([notificacion_repository.usuario_de_alumno(id_alumno)], tipo, titulo,
+                         mensaje, id_referencia)
+    except Exception as error:
+        log.warning("Error no bloqueante al notificar alumno %s: %s", id_alumno, error)
+        return 0
 
 
 def enviar_pendientes() -> None:

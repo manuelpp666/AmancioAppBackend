@@ -25,8 +25,19 @@ log = logging.getLogger(__name__)
 
 def armar_mensajes(tokens: list, titulo: str, mensaje: str, datos: dict | None = None) -> list:
     """Un mensaje por cada token de Expo (los tokens de otro tipo se ignoran)."""
-    return [{"to": token, "title": titulo, "body": mensaje, "sound": "default", "data": datos or {}}
-            for token in tokens if token.startswith(_PREFIJOS_EXPO)]
+    return [
+        {
+            "to": token,
+            "title": titulo,
+            "body": mensaje,
+            "sound": "default",
+            "priority": "high",
+            "channelId": "default",
+            "data": datos or {},
+        }
+        for token in tokens
+        if token.startswith(_PREFIJOS_EXPO)
+    ]
 
 
 def _enviar_ahora(mensajes: list) -> None:
