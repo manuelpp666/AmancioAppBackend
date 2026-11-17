@@ -28,6 +28,12 @@ def listar(id_carga):
     return jsonify(tarea_service.listar(usuario_actual(), id_carga))
 
 
+@bp.get("/item/<int:id_tarea>")
+@jwt_required()
+def obtener(id_tarea):
+    return jsonify(tarea_service.obtener(usuario_actual(), id_tarea))
+
+
 @bp.post("/<int:id_carga>")
 @jwt_required("DOCENTE")
 def publicar(id_carga):

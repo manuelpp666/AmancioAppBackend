@@ -30,16 +30,29 @@ def notificar(id_usuarios: list, tipo: str, titulo: str, mensaje: str, id_refere
     NUNCA bloquee el flujo principal de la operación (crear tarea, calificación, etc.)."""
     try:
         id_usuarios = [i for i in dict.fromkeys(id_usuarios) if i is not None]   # sin repetidos
+        notificaciones_por_usuario = {}
         for id_usuario in id_usuarios:
             try:
-                notificacion_repository.crear(id_usuario, tipo, titulo, mensaje[:300], id_referencia)
+                id_notif = notificacion_repository.crear(id_usuario, tipo, titulo, mensaje[:300], id_referencia)
+                if id_notif:
+                    notificaciones_por_usuario[id_usuario] = id_notif
             except Exception as e_fila:
                 log.warning("No se pudo crear notificación individual para usuario %s: %s", id_usuario, e_fila)
         if id_usuarios:
             # Se anota para enviar el push al final de la petición (si terminó bien).
-            g.setdefault("push_pendientes", []).append(
-                {"usuarios": id_usuarios, "titulo": titulo, "mensaje": mensaje,
-                 "datos": {"tipo": tipo, "id_referencia": id_referencia}})
+            g.setdefault("push_pendientes", []).append({
+                "usuarios": id_usuarios,
+                "notificaciones": notificaciones_por_usuario,
+                "titulo": titulo,
+                "mensaje": mensaje,
+                "tipo": tipo,
+                "id_referencia": id_referencia,
+                "datos": {
+                    "tipo": tipo,
+                    "id_referencia": id_referencia,
+                    "id_notificacion": notificaciones_por_usuario.get(id_usuarios[0]) if len(id_usuarios) == 1 else None,
+                },
+            })
         return len(id_usuarios)
     except Exception as error:
         log.warning("Error no bloqueante al crear notificaciones: %s", error)
@@ -70,8 +83,40 @@ def enviar_pendientes() -> None:
     notificación ya está guardada y un fallo del push no debe romper la respuesta."""
     for aviso in g.pop("push_pendientes", []):
         try:
-            tokens = dispositivo_repository.tokens_activos(aviso["usuarios"])
-            push.enviar(tokens, aviso["titulo"], aviso["mensaje"], aviso["datos"])
+            usuarios = aviso.get("usuarios", [])
+            notificaciones = aviso.get("notificaciones", {})
+            titulo = aviso.get("titulo", "")
+            mensaje = aviso.get("mensaje", "")
+            tipo = aviso.get("tipo")
+            id_referencia = aviso.get("id_referencia")
+
+            dispositivos = dispositivo_repository.dispositivos_activos(usuarios)
+            if dispositivos:
+                mensajes = [
+                    {
+                        "to": disp["token"],
+                        "title": titulo,
+                        "body": mensaje,
+                        "sound": "default",
+                        "priority": "high",
+                        "channelId": "default",
+                        "data": {
+                            "tipo": tipo,
+                            "id_referencia": id_referencia,
+                            "id_notificacion": notificaciones.get(disp["id_usuario"]),
+                        },
+                    }
+                    for disp in dispositivos
+                ]
+                push.enviar_mensajes(mensajes)
+            else:
+                tokens = dispositivo_repository.tokens_activos(usuarios)
+                datos = aviso.get("datos", {})
+                datos["tipo"] = tipo
+                datos["id_referencia"] = id_referencia
+                if len(usuarios) == 1:
+                    datos["id_notificacion"] = notificaciones.get(usuarios[0])
+                push.enviar(tokens, titulo, mensaje, datos)
         except Exception as error:
             log.warning("No se pudo preparar el push: %s", error)
 

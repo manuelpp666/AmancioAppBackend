@@ -45,3 +45,15 @@ def tokens_activos(id_usuarios: list) -> list:
         WHERE activo = 1 AND id_usuario IN ({marcas})
     """, tuple(id_usuarios))
     return [fila["token"] for fila in filas]
+
+
+def dispositivos_activos(id_usuarios: list) -> list:
+    """Dispositivos (id_usuario, token) de los celulares activos de esos usuarios."""
+    if not id_usuarios:
+        return []
+    marcas = ", ".join(["%s"] * len(id_usuarios))
+    filas = consultar_todos(f"""
+        SELECT id_usuario, token FROM dispositivo_push
+        WHERE activo = 1 AND id_usuario IN ({marcas})
+    """, tuple(id_usuarios))
+    return filas

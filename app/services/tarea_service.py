@@ -37,11 +37,13 @@ def _buscar_tarea(id_tarea: int) -> dict:
 
 def _estado_entrega(fila: dict, fecha_limite) -> dict:
     """Estado de la entrega de un alumno, a partir de una fila con sus datos de entrega."""
-    if fila["id_entrega"] is None:
+    id_entrega = fila.get("id_entrega")
+    if id_entrega is None:
         vencida = fecha_limite is not None and datetime.now() > fecha_limite
         return {"estado": "VENCIDA" if vencida else "PENDIENTE", "fuera_de_plazo": False}
-    fuera = fecha_limite is not None and fila["fecha_envio"] > fecha_limite
-    estado = "CALIFICADA" if fila["calificacion"] is not None else "ENTREGADA"
+    fecha_envio = fila.get("fecha_envio")
+    fuera = bool(fecha_limite is not None and fecha_envio is not None and fecha_envio > fecha_limite)
+    estado = "CALIFICADA" if fila.get("calificacion") is not None else "ENTREGADA"
     return {"estado": estado, "fuera_de_plazo": fuera}
 
 
@@ -61,6 +63,24 @@ def listar(usuario: dict, id_carga: int) -> dict:
     for tarea in tareas:
         tarea.update(_estado_entrega(tarea, tarea["fecha_entrega"]))
     return {"curso": carga, "tareas": tareas}
+
+
+def obtener(usuario: dict, id_tarea: int) -> dict:
+    """Detalle de una tarea específica con el estado de entrega del alumno si corresponde."""
+    if usuario["rol"] == "ALUMNO":
+        alumno = perfil_repository.alumno_por_usuario(usuario["id"])
+        tarea = tarea_repository.buscar_para_alumno(id_tarea, alumno["id_alumno"])
+        if tarea is None:
+            raise ApiError(404, "Tarea no encontrada")
+        carga = cursos_service.buscar_carga(tarea["id_carga_academica"])
+        cursos_service.exigir_ver_curso(usuario, carga)
+        tarea.update(_estado_entrega(tarea, tarea["fecha_entrega"]))
+    else:
+        tarea = _buscar_tarea(id_tarea)
+        carga = cursos_service.buscar_carga(tarea["id_carga_academica"])
+        cursos_service.exigir_ver_curso(usuario, carga)
+
+    return {"tarea": tarea, "curso": carga}
 
 
 def publicar(usuario: dict, id_carga: int, datos: dict) -> dict:

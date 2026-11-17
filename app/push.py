@@ -53,11 +53,17 @@ def _enviar_ahora(mensajes: list) -> None:
             log.warning("No se pudo enviar la notificación push: %s", error)
 
 
+def enviar_mensajes(mensajes: list) -> int:
+    """Envía una lista de mensajes de Expo ya armados en segundo plano."""
+    mensajes_validos = [m for m in mensajes if m.get("to", "").startswith(_PREFIJOS_EXPO)]
+    if not config.PUSH_ACTIVO or not mensajes_validos:
+        return 0
+    threading.Thread(target=_enviar_ahora, args=(mensajes_validos,), daemon=True).start()
+    return len(mensajes_validos)
+
+
 def enviar(tokens: list, titulo: str, mensaje: str, datos: dict | None = None) -> int:
     """Envía la notificación a esos celulares en segundo plano (no hace esperar al usuario).
     Devuelve cuántos mensajes se van a enviar (0 si el push está apagado)."""
     mensajes = armar_mensajes(tokens, titulo, mensaje, datos)
-    if not config.PUSH_ACTIVO or not mensajes:
-        return 0
-    threading.Thread(target=_enviar_ahora, args=(mensajes,), daemon=True).start()
-    return len(mensajes)
+    return enviar_mensajes(mensajes)

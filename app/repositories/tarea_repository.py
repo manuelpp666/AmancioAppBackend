@@ -16,6 +16,17 @@ def buscar(id_tarea: int):
     return consultar_uno(f"SELECT {_COLUMNAS_TAREA} FROM tarea t WHERE t.id_tarea = %s", (id_tarea,))
 
 
+def buscar_para_alumno(id_tarea: int, id_alumno: int):
+    """Tarea con la entrega de ESE alumno (NULL si no entregó)."""
+    return consultar_uno(f"""
+        SELECT {_COLUMNAS_TAREA},
+               e.id_entrega, e.archivo_url, e.fecha_envio, e.calificacion, e.retroalimentacion_docente
+        FROM tarea t
+        LEFT JOIN entrega_tarea e ON e.id_tarea = t.id_tarea AND e.id_alumno = %s
+        WHERE t.id_tarea = %s
+    """, (id_alumno, id_tarea))
+
+
 def listar_para_docente(id_carga: int) -> list:
     """Tareas del curso con cuántas entregas tiene cada una y cuántas ya calificó.
     COUNT(e.calificacion) solo cuenta las que NO son NULL."""
