@@ -35,7 +35,20 @@ JWT_EXPIRE_MINUTES = _entero("ACCESS_TOKEN_EXPIRE_MINUTES", 60)  # duración del
 ES_PRODUCCION = (os.getenv("ENTORNO") or "desarrollo").strip().lower() == "produccion"
 # Orígenes permitidos para CORS (solo si se prueba en navegador), separados por comas.
 ALLOWED_ORIGINS = [o.strip() for o in (os.getenv("ALLOWED_ORIGINS") or "").split(",") if o.strip()]
-MAX_CONTENT_MB = _entero("MAX_CONTENT_MB", 12)   # tamaño máximo de una petición
+# --- Archivos subidos (tareas y entregas) -------------------------------------
+# Carpeta donde se guardan los archivos (PDF, Word, imágenes...). Está en .gitignore.
+CARPETA_ARCHIVOS = os.path.abspath(os.getenv("CARPETA_ARCHIVOS") or "media")
+MAX_ARCHIVO_MB = _entero("MAX_ARCHIVO_MB", 10)    # tamaño máximo de UN archivo
+# Cuántas horas sirve el enlace para abrir un archivo (se renueva al volver a consultar).
+HORAS_ENLACE_ARCHIVO = _entero("HORAS_ENLACE_ARCHIVO", 12)
+# Tamaño máximo de una petición: el archivo + el resto de los datos.
+MAX_CONTENT_MB = max(_entero("MAX_CONTENT_MB", 12), MAX_ARCHIVO_MB + 1)
+
+# Mensajes y notificaciones al instante por WebSocket (ver app/tiempo_real.py).
+TIEMPO_REAL_ACTIVO = (os.getenv("TIEMPO_REAL_ACTIVO") or "1").strip().lower() in ("1", "true", "si")
+
+# Al encender el servidor, crear las tablas y columnas nuevas que falten (ver app/migraciones.py).
+ACTUALIZAR_BASE_AL_INICIAR = (os.getenv("ACTUALIZAR_BASE_AL_INICIAR") or "1").strip().lower() in ("1", "true", "si")
 # Costo del hash bcrypt: más alto = más seguro pero más lento. Se limita entre 10 y 16.
 BCRYPT_ROUNDS = max(10, min(_entero("BCRYPT_ROUNDS", 12), 16))
 # Notificaciones push al celular (Expo). Apagado por defecto: las notificaciones se

@@ -5,7 +5,14 @@ El auxiliar registra la asistencia de TODA una sección en una sola operación
 ninguno. Si algo falla a mitad de camino, el ROLLBACK deshace lo que ya se
 había escrito y la base queda como estaba.
 
-estado: P = presente, T = tardanza, F = falta, J = falta justificada.
+estado: P = presente, T = tardanza, F = falta, J = justificada.
+
+JUSTIFICAR sin perder lo que pasó: cuando el alumno justifica una tardanza o una
+falta, se registra J y se guarda en `estado_original` lo que tenía antes (T o F).
+Así la app muestra los dos: "Tardanza" + "Justificada".
+    {"id_alumno": 3, "estado": "J", "estado_original": "T"}
+Si llega J sin estado_original, se usa lo que ya estaba registrado ese día (T o F);
+si no había nada, se toma como falta (F).
 """
 from datetime import date
 
@@ -16,6 +23,9 @@ from app.services import academico_service, cursos_service
 from app.utils import entero, fecha, lista, texto
 
 ESTADOS = ("P", "T", "F", "J")
+JUSTIFICADA = "J"
+SE_PUEDEN_JUSTIFICAR = ("T", "F")      # tardanza y falta
+ORIGINAL_POR_DEFECTO = "F"             # J sin dato de antes = falta justificada
 
 
 def _resumen(conteos: list) -> dict:
@@ -24,6 +34,23 @@ def _resumen(conteos: list) -> dict:
     for fila in conteos:
         resumen[fila["estado"]] = fila["total"]
     return resumen
+
+
+def _estado_original(registro: dict, estado: str, anterior: dict | None):
+    """Qué tenía el alumno antes de justificarse (T o F). Solo para J; si no, None."""
+    if estado != JUSTIFICADA:
+        return None
+    original = (texto(registro, "estado_original", minimo=0, maximo=1, requerido=False) or "").upper()
+    if original:
+        if original not in SE_PUEDEN_JUSTIFICAR:
+            raise ApiError(400, "estado_original debe ser T (tardanza) o F (falta)")
+        return original
+    # No lo enviaron: lo que había ese día (si ya era J, su original; si era T o F, ese).
+    if anterior is not None:
+        previo = anterior["estado_original"] if anterior["estado"] == JUSTIFICADA else anterior["estado"]
+        if previo in SE_PUEDEN_JUSTIFICAR:
+            return previo
+    return ORIGINAL_POR_DEFECTO
 
 
 def registrar_lote(datos: dict) -> dict:
@@ -47,8 +74,11 @@ def registrar_lote(datos: dict) -> dict:
     if not matriculados:
         raise ApiError(400, "La sección no tiene alumnos matriculados")
 
+    # Lo que ya estaba registrado ese día (para saber qué se está justificando).
+    antes = {r["id_alumno"]: r for r in asistencia_repository.de_seccion_y_fecha(id_seccion, dia)}
+
     # --- 2. Validar cada registro ----------------------------------------------
-    marcados = {}   # id_alumno → (estado, observacion)
+    marcados = {}   # id_alumno → (estado, estado_original, observacion)
     for registro in registros:
         if not isinstance(registro, dict):
             raise ApiError(400, "Cada registro debe ser un objeto con id_alumno y estado")
@@ -62,7 +92,8 @@ def registrar_lote(datos: dict) -> dict:
             raise ApiError(400, f"El alumno {id_alumno} no está matriculado en esta sección")
         if id_alumno in marcados:
             raise ApiError(400, f"El alumno {id_alumno} aparece dos veces")
-        marcados[id_alumno] = (estado, observacion)
+        original = _estado_original(registro, estado, antes.get(id_alumno))
+        marcados[id_alumno] = (estado, original, observacion)
 
     # Regla del colegio: el registro debe estar COMPLETO (todos los alumnos).
     faltan = [f"{a['nombres']} {a['apellidos']}" for i, a in matriculados.items() if i not in marcados]
@@ -74,16 +105,16 @@ def registrar_lote(datos: dict) -> dict:
     try:
         # Si ya había asistencia de ese día, se reemplaza por la nueva.
         asistencia_repository.borrar_del_dia(id_seccion, dia)
-        for id_alumno, (estado, observacion) in marcados.items():
+        for id_alumno, (estado, original, observacion) in marcados.items():
             id_matricula = matriculados[id_alumno]["id_matricula"]
-            asistencia_repository.registrar(id_matricula, dia, estado, observacion)
+            asistencia_repository.registrar(id_matricula, dia, estado, original, observacion)
         db.commit()        # todo salió bien: se guardan TODOS los registros
     except Exception:
         db.rollback()      # algo falló: no se guarda NINGUNO
         raise
 
     conteo = {estado: 0 for estado in ESTADOS}
-    for estado, _ in marcados.values():
+    for estado, _, _ in marcados.values():
         conteo[estado] += 1
     return {
         "message": "Asistencia registrada",

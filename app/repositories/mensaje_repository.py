@@ -121,13 +121,32 @@ def actualizar_ultimo(id_conversacion: int, vista_previa: str) -> int:
 
 # --- Mensajes ---------------------------------------------------------------------
 
-def mensajes_de(id_conversacion: int) -> list:
+def mensajes_de(id_conversacion: int, desde: int | None = None) -> list:
+    """Mensajes de la conversación. Con `desde`, solo los que tienen un id mayor (los nuevos)."""
     return consultar_todos("""
         SELECT id_mensaje, remitente_id, contenido, leido, fecha_envio
         FROM mensaje
-        WHERE id_conversacion = %s
+        WHERE id_conversacion = %s AND id_mensaje > %s
         ORDER BY fecha_envio, id_mensaje
-    """, (id_conversacion,))
+    """, (id_conversacion, desde or 0))
+
+
+def buscar_mensaje(id_mensaje: int):
+    return consultar_uno("""
+        SELECT id_mensaje, remitente_id, contenido, leido, fecha_envio
+        FROM mensaje
+        WHERE id_mensaje = %s
+    """, (id_mensaje,))
+
+
+def ultimo_leido(id_conversacion: int, id_remitente: int) -> int:
+    """Id del último mensaje de ese remitente que el otro ya leyó (0 si ninguno)."""
+    fila = consultar_uno("""
+        SELECT COALESCE(MAX(id_mensaje), 0) AS ultimo
+        FROM mensaje
+        WHERE id_conversacion = %s AND remitente_id = %s AND leido = 1
+    """, (id_conversacion, id_remitente))
+    return fila["ultimo"]
 
 
 def crear_mensaje(id_conversacion: int, remitente_id: int, contenido: str) -> int:

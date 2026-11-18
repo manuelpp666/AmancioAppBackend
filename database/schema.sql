@@ -292,11 +292,15 @@ CREATE TABLE IF NOT EXISTS `carga_academica` (
   CONSTRAINT `carga_academica_ibfk_4` FOREIGN KEY (`id_docente`) REFERENCES `docente` (`id_docente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Asistencia diaria. estado: P presente, T tardanza, F falta, J justificada.
+-- estado_original: si se justificó (J), qué tenía antes: T o F. Así queda el
+-- registro de lo que pasó ("tardanza justificada" o "falta justificada").
 CREATE TABLE IF NOT EXISTS `asistencia` (
   `id_asistencia` int(11) NOT NULL AUTO_INCREMENT,
   `id_matricula` int(11) DEFAULT NULL,
   `fecha` date NOT NULL,
   `estado` varchar(1) NOT NULL,
+  `estado_original` varchar(1) DEFAULT NULL,
   `observacion` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id_asistencia`),
   KEY `id_matricula` (`id_matricula`),
@@ -371,6 +375,7 @@ CREATE TABLE IF NOT EXISTS `tarea` (
   `fecha_publicacion` datetime DEFAULT current_timestamp(),
   `fecha_entrega` datetime DEFAULT NULL,
   `archivo_adjunto_url` varchar(255) DEFAULT NULL,
+  `id_archivo` int(11) DEFAULT NULL,
   `estado` varchar(20) DEFAULT NULL,
   `tipo_evaluacion` varchar(30) DEFAULT NULL,
   `bimestre` int(11) NOT NULL,
@@ -385,6 +390,7 @@ CREATE TABLE IF NOT EXISTS `entrega_tarea` (
   `id_tarea` int(11) DEFAULT NULL,
   `id_alumno` int(11) DEFAULT NULL,
   `archivo_url` varchar(255) DEFAULT NULL,
+  `id_archivo` int(11) DEFAULT NULL,
   `comentario_alumno` text DEFAULT NULL,
   `fecha_envio` datetime DEFAULT current_timestamp(),
   `calificacion` decimal(4,2) DEFAULT NULL,
@@ -621,6 +627,48 @@ CREATE TABLE IF NOT EXISTS `operacion_offline` (
   PRIMARY KEY (`id_operacion`),
   KEY `id_usuario` (`id_usuario`),
   CONSTRAINT `operacion_offline_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================================================
+-- ARCHIVOS SUBIDOS (PDF, Word, Excel, PowerPoint, imágenes...)
+-- El archivo se guarda en una carpeta del servidor (CARPETA_ARCHIVOS, por defecto
+-- "media/") con un nombre aleatorio; aquí queda su nombre original y su tipo.
+-- Lo usan tarea.id_archivo (enunciado) y entrega_tarea.id_archivo (trabajo del alumno).
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `archivo` (
+  `id_archivo` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) DEFAULT NULL,
+  `nombre_original` varchar(255) NOT NULL,
+  `nombre_guardado` varchar(100) NOT NULL,
+  `tipo_mime` varchar(150) NOT NULL,
+  `tamano_bytes` int(11) NOT NULL,
+  `fecha_subida` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_archivo`),
+  UNIQUE KEY `nombre_guardado` (`nombre_guardado`),
+  KEY `id_usuario` (`id_usuario`),
+  CONSTRAINT `archivo_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =============================================================================
+-- PREFERENCIAS DE NOTIFICACIONES (silenciar o limitar los avisos push)
+-- Una fila por usuario (si no tiene fila, recibe todo). Solo afecta a lo que
+-- llega al CELULAR: los avisos se siguen guardando en la tabla `notificacion`.
+--   silenciar_todo      1 = no recibe ninguna notificación push
+--   pausado_hasta       silenciadas hasta esa fecha y hora (ej. "por 8 horas")
+--   tipos_silenciados   tipos que no quiere recibir, separados por comas: "CLASE,MENSAJE"
+--   no_molestar_desde / no_molestar_hasta   horario diario sin notificaciones (ej. 22:00 a 07:00)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `preferencia_notificacion` (
+  `id_usuario` int(11) NOT NULL,
+  `silenciar_todo` tinyint(1) NOT NULL DEFAULT 0,
+  `pausado_hasta` datetime DEFAULT NULL,
+  `tipos_silenciados` varchar(255) NOT NULL DEFAULT '',
+  `no_molestar_desde` time DEFAULT NULL,
+  `no_molestar_hasta` time DEFAULT NULL,
+  `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_usuario`),
+  CONSTRAINT `preferencia_notificacion_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

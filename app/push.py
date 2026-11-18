@@ -23,21 +23,27 @@ _POR_ENVIO = 100            # Expo acepta hasta 100 mensajes por petición
 log = logging.getLogger(__name__)
 
 
+def es_token_expo(token: str) -> bool:
+    """Solo se envía a tokens de Expo; cualquier otro (por ejemplo, de Firebase directo) se ignora."""
+    return bool(token) and token.startswith(_PREFIJOS_EXPO)
+
+
+def armar_mensaje(token: str, titulo: str, mensaje: str, datos: dict | None = None) -> dict:
+    """Un mensaje para UN celular, en el formato del servicio de Expo."""
+    return {
+        "to": token,
+        "title": titulo,
+        "body": mensaje,
+        "sound": "default",
+        "priority": "high",        # que llegue aunque el celular esté en reposo
+        "channelId": "default",    # canal de Android que crea la app al pedir permiso
+        "data": datos or {},       # la app lo usa para abrir la pantalla relacionada
+    }
+
+
 def armar_mensajes(tokens: list, titulo: str, mensaje: str, datos: dict | None = None) -> list:
-    """Un mensaje por cada token de Expo (los tokens de otro tipo se ignoran)."""
-    return [
-        {
-            "to": token,
-            "title": titulo,
-            "body": mensaje,
-            "sound": "default",
-            "priority": "high",
-            "channelId": "default",
-            "data": datos or {},
-        }
-        for token in tokens
-        if token.startswith(_PREFIJOS_EXPO)
-    ]
+    """El mismo mensaje para varios celulares (los tokens que no son de Expo se ignoran)."""
+    return [armar_mensaje(token, titulo, mensaje, datos) for token in tokens if es_token_expo(token)]
 
 
 def _enviar_ahora(mensajes: list) -> None:
@@ -54,12 +60,13 @@ def _enviar_ahora(mensajes: list) -> None:
 
 
 def enviar_mensajes(mensajes: list) -> int:
-    """Envía una lista de mensajes de Expo ya armados en segundo plano."""
-    mensajes_validos = [m for m in mensajes if m.get("to", "").startswith(_PREFIJOS_EXPO)]
-    if not config.PUSH_ACTIVO or not mensajes_validos:
+    """Envía mensajes ya armados (con armar_mensaje) en segundo plano.
+    Devuelve cuántos se van a enviar (0 si el push está apagado o no hay tokens válidos)."""
+    validos = [m for m in mensajes if es_token_expo(m.get("to", ""))]
+    if not config.PUSH_ACTIVO or not validos:
         return 0
-    threading.Thread(target=_enviar_ahora, args=(mensajes_validos,), daemon=True).start()
-    return len(mensajes_validos)
+    threading.Thread(target=_enviar_ahora, args=(validos,), daemon=True).start()
+    return len(validos)
 
 
 def enviar(tokens: list, titulo: str, mensaje: str, datos: dict | None = None) -> int:

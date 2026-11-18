@@ -4,6 +4,7 @@ GET   /mensajes/contactos                      con quién puedo iniciar una conv
 GET   /mensajes/conversaciones                 mis conversaciones (último mensaje y no leídos)
 POST  /mensajes/conversaciones                 escribir a un contacto (201 nueva / 200 ya existía)
 GET   /mensajes/conversaciones/<id>            los mensajes de una conversación
+GET   /mensajes/conversaciones/<id>?desde=<id_mensaje>   solo los mensajes NUEVOS (tiempo real)
 POST  /mensajes/conversaciones/<id>            responder en una conversación
 PATCH /mensajes/conversaciones/<id>/leido      marcar como leídos los mensajes recibidos
 
@@ -11,8 +12,13 @@ JSON:
     iniciar:   {"id_usuario": 5, "contenido": "Hola profesor..."}
     responder: {"contenido": "..."}
 Los POST aceptan la cabecera X-Id-Operacion (envío sin conexión, ver app/offline.py).
+
+TIEMPO REAL: con el chat abierto, la app pregunta cada pocos segundos por los mensajes
+nuevos (?desde=<id del último mensaje que tiene>). La respuesta es pequeña: solo lo
+nuevo y `leidos_hasta` (hasta qué mensaje mío ya leyó el otro, para el "leído").
+Con la app cerrada, el aviso llega como notificación push.
 """
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from app.auth import jwt_required, usuario_actual
 from app.offline import idempotente
@@ -45,7 +51,8 @@ def iniciar():
 @bp.get("/conversaciones/<int:id_conversacion>")
 @jwt_required()
 def ver(id_conversacion):
-    return jsonify(mensaje_service.ver(usuario_actual(), id_conversacion))
+    desde = request.args.get("desde", type=int)      # None = toda la conversación
+    return jsonify(mensaje_service.ver(usuario_actual(), id_conversacion, desde))
 
 
 @bp.post("/conversaciones/<int:id_conversacion>")

@@ -125,12 +125,17 @@ Sigue estos pasos la primera vez que descargues el proyecto:
    DB_HOST=127.0.0.1:3306
    DB_NAME=amancio_app_movil
    SECRET_KEY=escribe-aqui-una-clave-aleatoria-de-al-menos-32-caracteres
+   # Para probar la app en el navegador de la PC (tecla "w" de Expo):
+   ALLOWED_ORIGINS=http://localhost:8081
    ```
 
    En XAMPP, `DB_PASS` suele estar vacío. En esta PC MySQL usa el puerto `3310`;
    si ese es tu caso, cambia `DB_HOST` por `127.0.0.1:3310`. `SECRET_KEY` debe
    tener al menos 32 caracteres. Opcional: `PUSH_ACTIVO=1` para que las notificaciones
    también se envíen al celular (por defecto solo se guardan en la base).
+   Otras opcionales: `CARPETA_ARCHIVOS` (dónde se guardan los archivos subidos, por
+   defecto `media/`), `MAX_ARCHIVO_MB` (10) y `ACTUALIZAR_BASE_AL_INICIAR` (1: al encender,
+   el servidor crea las tablas y columnas nuevas que falten; ver `app/migraciones.py`).
 4. **Crea la base de datos y sus datos de prueba**. Elige una de estas opciones:
    - **Importar la base completa (recomendado):** abre phpMyAdmin, selecciona
      **Importar** y carga `database/amancio_app_movil.sql`.
@@ -152,6 +157,8 @@ Sigue estos pasos la primera vez que descargues el proyecto:
 
    La API quedará disponible en `http://localhost:5000`. Puedes comprobar que
    responde abriendo esa dirección en el navegador; debe devolver el estado de la API.
+   El mismo servidor atiende el **WebSocket** (mensajes y avisos en tiempo real). Si ya
+   tenías el entorno creado, instala lo nuevo con `pip install -r requirements.txt`.
 6. **Configura Postman:** importa `postman/AmancioApp.postman_collection.json`.
    En la colección, abre **Variables** y cambia `base_url` por la URL donde está
    corriendo la API.   
@@ -160,6 +167,43 @@ Sigue estos pasos la primera vez que descargues el proyecto:
 
 Para volver a iniciar el servidor después de esta configuración, basta con activar
 el entorno virtual y ejecutar `python run.py`.
+
+### Probar la app en local (guía para el equipo)
+
+Con esto funciona **todo** desde tu PC, sin internet ni el servidor de Oracle: la API,
+la mensajería en tiempo real (WebSocket), las notificaciones, los archivos de las tareas
+y la asistencia.
+
+1. **XAMPP:** inicia **MySQL** (Apache no hace falta).
+2. **Dependencias al día** (si alguien agregó una, por ejemplo `Flask-SocketIO`):
+   ```powershell
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   ```
+3. **`.env`:** además de los datos de MySQL, agrega `ALLOWED_ORIGINS=http://localhost:8081`
+   (para entrar a la app desde el navegador de la PC). `PUSH_ACTIVO` déjalo en `0` con
+   Expo Go: las notificaciones llegan por el WebSocket.
+4. **Base de datos:** si ya la tenías, no hagas nada: al encender, el servidor crea solo
+   las tablas y columnas nuevas (`app/migraciones.py`). Si es la primera vez, importa
+   `database/amancio_app_movil.sql` (paso 4 de arriba).
+5. **Enciende el servidor:**
+   ```powershell
+   python run.py
+   ```
+   Debe responder en `http://localhost:5000`. Usa siempre `python run.py` (no
+   `flask run` ni gunicorn): así se enciende también el **WebSocket** del tiempo real.
+   Si Windows pregunta por el firewall, elige **Permitir** (para que llegue el celular).
+6. **App móvil:** sigue la guía del README de `AmancioAppMovil`, sección *Cómo ejecutar y
+   probar todo en local*: conectar el celular (cable USB o WiFi), iniciar Expo y las pruebas
+   paso a paso (chat, notificaciones, silenciar, tareas con archivo, asistencia justificada).
+
+Usuarios para las pruebas (contraseña = DNI): `ALU-33333333` Lucía (alumna),
+`DOC-22222222` Carlos (docente), `AUX-77777777` Jorge (auxiliar), `PSI-88888888` Elena
+(psicóloga). Lista completa en *Usuarios de prueba*.
+
+**Comprobar el backend sin la app** (opcional): en Postman, `POST /usuarios/login` y luego,
+por ejemplo, `GET /notificaciones/preferencias` o `GET /mensajes/conversaciones/<id>?desde=0`.
+Para entregar una tarea con archivo: `POST /tareas/item/<id>/entregar` con *Body →
+form-data*: campo `archivo` (tipo *File*) y, si quieres, `comentario`.
 
 **Comandos adicionales**:
 
@@ -218,7 +262,7 @@ y `flask --app run datos-prueba`.
 obliga a cambiar la contraseña (la inicial es el DNI) con `POST /perfil/auth/change-password`,
 que la apaga. La nueva clave no puede ser el DNI.
 
-## Endpoints (64)
+## Endpoints (68)
 
 | Método | Ruta | Acceso | Módulo |
 |---|---|---|---|
@@ -279,12 +323,16 @@ que la apaga. La nueva clave no puede ser el DNI.
 | GET | `/mensajes/contactos` | JWT | Mensajería |
 | GET | `/mensajes/conversaciones` | JWT | Mensajería |
 | POST | `/mensajes/conversaciones` | JWT (a un contacto) | Mensajería (transacción) |
-| GET | `/mensajes/conversaciones/<id>` | participante | Mensajería |
+| GET | `/mensajes/conversaciones/<id>?desde=<id_mensaje>` | participante | Mensajería (`desde`: solo los nuevos) |
 | POST | `/mensajes/conversaciones/<id>` | participante | Mensajería (transacción) |
 | PATCH | `/mensajes/conversaciones/<id>/leido` | participante | Mensajería |
 | GET | `/notificaciones?solo_no_leidas=1` | JWT | Notificaciones |
 | PATCH | `/notificaciones/<id>/leida` | dueño | Notificaciones |
 | PATCH | `/notificaciones/leer-todas` | JWT | Notificaciones |
+| GET | `/notificaciones/contadores` | JWT | Notificaciones (no leídos, liviano) |
+| GET | `/notificaciones/preferencias` | JWT | Notificaciones (silenciar / limitar) |
+| PUT | `/notificaciones/preferencias` | JWT | Notificaciones (silenciar / limitar) |
+| GET | `/archivos/<id_archivo>?token=<t>` | enlace firmado | Archivos subidos |
 | GET | `/offline/operaciones/<id_operacion>` | dueño | Sin conexión |
 
 Un **curso** (`id_carga`) es una *carga académica*: un curso dictado por un docente
@@ -294,14 +342,21 @@ en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
 
 - **Asistencia por lote:** la lista debe incluir a *todos* los alumnos de la sección,
   sin repetidos ni alumnos de otra sección; estado P, T, F o J; fecha no futura.
-  Registrar otra vez el mismo día reemplaza lo anterior.
+  Registrar otra vez el mismo día reemplaza lo anterior. **Justificar** una tardanza o
+  falta guarda J y, en `estado_original`, lo que tenía antes (T o F): así queda el
+  registro de lo que pasó ("tardanza justificada").
 - **Notas:** cada nota pertenece a una *evaluación* ("Práctica 1", "Examen"...) y va de
   0 a 20. El promedio del bimestre es el promedio simple de sus evaluaciones. Un bimestre
   **cerrado** ya no acepta notas (409); para cerrarlo, todos los alumnos deben tener al
   menos una nota (400). Al cerrar, el promedio pasa a la libreta (`resumen_nota`); con el
   4.º bimestre cerrado el curso queda APROBADO (≥ 11) o DESAPROBADO.
-- **Tareas:** la fecha límite debe ser futura al publicar. El alumno entrega con un enlace
-  y puede volver a entregar mientras no esté calificada (después → 409). Una entrega tardía
+- **Tareas:** la fecha límite debe ser futura al publicar. El alumno entrega con un
+  **archivo** (PDF, Word, Excel, PowerPoint, imagen, ZIP; máx. 10 MB) y/o un **enlace**
+  (al menos uno). El docente también puede adjuntar el enunciado como archivo. Con archivo
+  se envía `multipart/form-data` (campo `datos` = el JSON de siempre, campo `archivo`).
+  Los archivos se abren con un enlace firmado que vence (`/archivos/<id>?token=`); tipos
+  permitidos en `TIPOS_PERMITIDOS` de `archivo_service.py`.
+  Puede volver a entregar mientras no esté calificada (después → 409). Una entrega tardía
   se acepta pero queda marcada `fuera_de_plazo` (regla `ACEPTAR_FUERA_DE_PLAZO` en
   `tarea_service.py`). Se califica una sola vez, de 0 a 20 (409 si se repite). No se borra
   una tarea con entregas (409). Estado para el alumno: PENDIENTE, VENCIDA, ENTREGADA o CALIFICADA.
@@ -317,8 +372,18 @@ en una sección durante un año (ej. Matemática · 3ro A · 2026 · Carlos).
   y admin, a cualquiera. Solo los dos participantes leen y responden (403).
 - **Notificaciones:** se crean solas, dentro de la misma transacción de la acción: nueva
   tarea, entrega calificada, clase virtual, bimestre cerrado (libreta), cita programada o
-  cancelada, reporte de conducta y mensaje nuevo. Si la petición sale bien y `PUSH_ACTIVO=1`,
-  además se envían al celular (tokens de Expo de `/dispositivos/token`).
+  cancelada, reporte de conducta y mensaje nuevo (la lista está en `TIPOS` de
+  `notificacion_service.py`). Si la petición sale bien y `PUSH_ACTIVO=1`, además se envían
+  al celular (tokens de Expo de `/dispositivos/token`), salvo a quien las **silenció**:
+  cada usuario puede silenciarlas todas, pausarlas unas horas, apagar tipos y fijar un
+  horario "no molestar". El aviso igual queda en su bandeja.
+- **Tiempo real (WebSocket, `app/tiempo_real.py`):** `python run.py` levanta la API y un
+  WebSocket (Flask-SocketIO) en el mismo puerto. La app se conecta con su JWT y entra a la
+  sala de su usuario. Después del commit, el servidor le envía `mensaje` (mensaje nuevo),
+  `leido` (el otro leyó mis mensajes) y `notificacion` (cada aviso, con `mostrar` según
+  sus preferencias). Una petición que falla no envía nada. Si el WebSocket no está
+  disponible (por ejemplo, con gunicorn), la app usa el respaldo: pide solo los mensajes
+  nuevos con `?desde=`. Al abrir un chat sus avisos "Mensaje de..." quedan leídos.
 - **Sin conexión:** las rutas que la app puede enviar offline (entregar tarea, asistencia por
   lote, reporte de conducta, solicitar cita, registrar notas y enviar mensajes) aceptan la
   cabecera `X-Id-Operacion`. Si llega dos veces el mismo id, la segunda NO se ejecuta: se

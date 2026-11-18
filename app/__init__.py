@@ -29,6 +29,7 @@ def create_app():
 
     # 1. Revisar que el archivo .env tenga lo necesario (si no, falla con un mensaje claro).
     config.verificar()
+    os.makedirs(config.CARPETA_ARCHIVOS, exist_ok=True)   # carpeta de archivos subidos
 
     # 2. Crear la app y decirle cómo convertir fechas, horas y decimales a JSON.
     app = Flask(__name__)
@@ -56,11 +57,11 @@ def create_app():
             return resp
 
     # 6. Registrar las rutas: cada archivo de app/routes es un módulo con su prefijo.
-    from app.routes import (academico_routes, asistencia_routes, auth_routes, cita_routes,
-                            clase_routes, conducta_routes, cursos_routes, dispositivo_routes,
-                            horario_routes, inicio_routes, material_routes, mensaje_routes,
-                            nota_routes, notificacion_routes, offline_routes, perfil_routes,
-                            tarea_routes)
+    from app.routes import (academico_routes, archivo_routes, asistencia_routes, auth_routes,
+                            cita_routes, clase_routes, conducta_routes, cursos_routes,
+                            dispositivo_routes, horario_routes, inicio_routes, material_routes,
+                            mensaje_routes, nota_routes, notificacion_routes, offline_routes,
+                            perfil_routes, tarea_routes)
     app.register_blueprint(auth_routes.bp)          # /usuarios      login y sesión
     app.register_blueprint(perfil_routes.bp)        # /perfil        datos personales y contraseña
     app.register_blueprint(dispositivo_routes.bp)   # /dispositivos  notificaciones
@@ -78,27 +79,40 @@ def create_app():
     app.register_blueprint(mensaje_routes.bp)       # /mensajes      mensajería interna
     app.register_blueprint(notificacion_routes.bp)  # /notificaciones  bandeja de avisos
     app.register_blueprint(offline_routes.bp)       # /offline       operaciones sin conexión
+    app.register_blueprint(archivo_routes.bp)       # /archivos      abrir un archivo subido
 
-    # 7. Al terminar una petición que salió bien, se envían los avisos push que
-    #    dejaron anotados los services (ver app/services/notificacion_service.py).
+    # 7. Tiempo real: WebSocket (Socket.IO) para mensajes y notificaciones al instante.
+    #    Al terminar una petición que salió bien, se envía lo que dejaron anotado los
+    #    services: los eventos del WebSocket (app/tiempo_real.py) y los avisos push
+    #    (app/services/notificacion_service.py).
+    from app import tiempo_real
+    tiempo_real.iniciar(app)
+
     @app.after_request
-    def _enviar_push(resp):
+    def _enviar_avisos(resp):
         if resp.status_code < 400:
             from app.services import notificacion_service
+            tiempo_real.enviar_pendientes()
             notificacion_service.enviar_pendientes()
         return resp
+
+    # 8. Poner la base al día (tablas y columnas nuevas). Ver app/migraciones.py.
+    if config.ACTUALIZAR_BASE_AL_INICIAR:
+        from app.migraciones import actualizar_al_iniciar
+        actualizar_al_iniciar(app)
 
     # Ruta de "salud": sirve para comprobar que el servidor está encendido.
     @app.get("/")
     def salud():
         return jsonify({"status": "ok", "servicio": "Campus AV Móvil API"})
 
-    # 8. Comandos de consola para preparar la base de datos (ver app/datos_prueba.py).
+    # 9. Comandos de consola para preparar la base de datos (ver app/datos_prueba.py).
     @app.cli.command("crear-tablas")
     def crear_tablas():
-        """Ejecuta database/schema.sql (crea las tablas que falten, no borra nada)."""
-        from app.datos_prueba import crear_tablas
-        print(f"{crear_tablas()} sentencias ejecutadas desde database/schema.sql")
+        """Crea las tablas y agrega las columnas nuevas que falten (no borra nada)."""
+        from app.migraciones import actualizar_base
+        agregadas = actualizar_base()
+        print("Tablas al día." + (f" Columnas nuevas: {', '.join(agregadas)}" if agregadas else ""))
 
     @app.cli.command("datos-prueba")
     def datos_prueba():

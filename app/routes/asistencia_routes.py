@@ -9,7 +9,9 @@ GET  /asistencia/seccion/<id_seccion>/resumen?desde=<f>&hasta=<f>
 JSON de /lote:
     {"id_seccion": 2, "fecha": "2026-10-13",
      "registros": [{"id_alumno": 1, "estado": "P"},
-                   {"id_alumno": 3, "estado": "T", "observacion": "Llegó 8:15"}]}
+                   {"id_alumno": 3, "estado": "T", "observacion": "Llegó 8:15"},
+                   {"id_alumno": 4, "estado": "J", "estado_original": "F"}]}
+    J = justificada; estado_original = lo que se justificó (T tardanza o F falta).
 """
 from flask import Blueprint, jsonify
 

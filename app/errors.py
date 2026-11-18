@@ -52,6 +52,12 @@ def registrar_errores(app) -> None:
         app.logger.exception("No se pudo usar la base de datos")
         return _respuesta(503, "No se pudo conectar con la base de datos")
 
+    @app.errorhandler(413)
+    def archivo_muy_grande(e):
+        # La petición pasa de MAX_CONTENT_MB (casi siempre, un archivo demasiado grande).
+        from app import config
+        return _respuesta(413, f"El archivo es demasiado grande: máximo {config.MAX_ARCHIVO_MB} MB")
+
     @app.errorhandler(HTTPException)
     def error_http(e: HTTPException):
         # Errores propios de Flask, como 404 (ruta que no existe) o 405 (método equivocado).

@@ -45,26 +45,6 @@ from app.services import nota_service
 
 ANIO = "2026"
 USUARIO_PRIMER_INGRESO = "ALU-44444444"
-ARCHIVO_SCHEMA = "database/schema.sql"
-
-
-# =============================================================================
-# Crear las tablas
-# =============================================================================
-
-def crear_tablas() -> int:
-    """Ejecuta cada sentencia de database/schema.sql. Devuelve cuántas ejecutó."""
-    with open(ARCHIVO_SCHEMA, encoding="utf-8") as archivo:
-        # Se quitan las líneas de comentario y se separa por ";".
-        lineas = [l for l in archivo if not l.strip().startswith("--")]
-    sentencias = [s.strip() for s in "".join(lineas).split(";") if s.strip()]
-
-    db = get_db()
-    with db.cursor() as cursor:
-        for sentencia in sentencias:
-            cursor.execute(sentencia)
-    db.commit()
-    return len(sentencias)
 
 
 # =============================================================================
@@ -435,8 +415,9 @@ def _asistencia() -> list[str]:
         for username, estado in zip(ALUMNOS_3RO_A, letras):
             id_matricula = _id("SELECT id_matricula FROM matricula WHERE id_alumno = %s AND id_anio_escolar = %s",
                                (_id_alumno(username), ANIO))
-            insertar("INSERT INTO asistencia (id_matricula, fecha, estado) VALUES (%s, %s, %s)",
-                     (id_matricula, date.fromisoformat(dia), estado))
+            insertar("INSERT INTO asistencia (id_matricula, fecha, estado, estado_original) "
+                     "VALUES (%s, %s, %s, %s)",
+                     (id_matricula, date.fromisoformat(dia), estado, "F" if estado == "J" else None))
     return ["asistencia de 3 fechas"]
 
 
@@ -786,7 +767,8 @@ def _demo_asistencia() -> None:
     """Asistencia de los últimos 8 días hábiles en 3ro A y 1ro A. HOY queda pendiente,
     para que el auxiliar pueda registrarla durante la demostración."""
     # Un texto por día con el estado de los 8 alumnos de 3ro A (orden de ALUMNOS_3RO_A).
-    estados_3a = ["PPPPPPPP", "PTPPPPPF", "PPFPPPPP", "PPPTPPPP",
+    # J = falta justificada, j = tardanza justificada (se guarda J con estado_original T).
+    estados_3a = ["PPPPPPPP", "PjPPPPPF", "PPFPPPPP", "PPPTPPPP",
                   "PPPPPJPP", "TPPPFPPP", "PPPPPPTP", "PPFPPPPP"]
     estados_mateo = "PPTPPPPP"
     for i, dia in enumerate(_dias_habiles_anteriores(8)):
@@ -796,8 +778,9 @@ def _demo_asistencia() -> None:
             if _id("SELECT COUNT(*) FROM asistencia WHERE id_matricula = %s AND fecha = %s",
                    (id_matricula, dia)):
                 continue
-            insertar("INSERT INTO asistencia (id_matricula, fecha, estado) VALUES (%s, %s, %s)",
-                     (id_matricula, dia, estado))
+            estado, original = {"J": ("J", "F"), "j": ("J", "T")}.get(estado, (estado, None))
+            insertar("INSERT INTO asistencia (id_matricula, fecha, estado, estado_original) "
+                     "VALUES (%s, %s, %s, %s)", (id_matricula, dia, estado, original))
 
 
 def _demo_conducta() -> None:

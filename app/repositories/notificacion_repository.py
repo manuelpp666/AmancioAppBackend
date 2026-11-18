@@ -37,6 +37,15 @@ def marcar_leida(id_notificacion: int) -> int:
     return ejecutar("UPDATE notificacion SET leida = 1 WHERE id_notificacion = %s", (id_notificacion,))
 
 
+def marcar_leidas_de(id_usuario: int, tipo: str, id_referencia: int) -> int:
+    """Marca como leídos los avisos de un tipo sobre un mismo elemento
+    (por ejemplo, los "Mensaje de..." de una conversación que el usuario ya abrió)."""
+    return ejecutar("""
+        UPDATE notificacion SET leida = 1
+        WHERE id_usuario = %s AND tipo = %s AND id_referencia = %s AND leida = 0
+    """, (id_usuario, tipo, id_referencia))
+
+
 def marcar_todas(id_usuario: int) -> int:
     """Marca como leídas todas las pendientes del usuario. Devuelve cuántas eran."""
     return ejecutar("UPDATE notificacion SET leida = 1 WHERE id_usuario = %s AND leida = 0",

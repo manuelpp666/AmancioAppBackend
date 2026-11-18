@@ -10,4 +10,6 @@ PyMySQL==1.1.2            # conexión a MySQL y consultas SQL
 cryptography==50.0.0      # PyMySQL lo necesita para MySQL 8 (caching_sha2_password)
 bcrypt==5.0.0             # hash de contraseñas (mismo formato que la base actual)
 python-dotenv>=1.0
+Flask-SocketIO>=5.3,<6   # WebSocket: mensajes y notificaciones en tiempo real
+simple-websocket>=1.0    # lo usa Flask-SocketIO para el WebSocket
 gunicorn>=22              # servidor para Render (en local basta `python run.py`)

@@ -1,9 +1,15 @@
 """Consultas SQL de la tabla `asistencia`.
 
 La asistencia se guarda por matrícula (alumno + año) y fecha.
-estado: P = presente, T = tardanza, F = falta, J = falta justificada.
+estado: P = presente, T = tardanza, F = falta, J = justificada.
+estado_original: si es J, lo que tenía antes de justificarse (T o F).
+    Los registros antiguos con J y sin estado_original se toman como falta (F),
+    que era lo que significaba J antes.
 """
 from app.database import consultar_todos, ejecutar, insertar
+
+# estado_original solo tiene sentido en las justificadas (J).
+_ORIGINAL = "CASE WHEN a.estado = 'J' THEN COALESCE(a.estado_original, 'F') END AS estado_original"
 
 
 def borrar_del_dia(id_seccion: int, fecha) -> int:
@@ -17,17 +23,17 @@ def borrar_del_dia(id_seccion: int, fecha) -> int:
     """, (id_seccion, fecha))
 
 
-def registrar(id_matricula: int, fecha, estado: str, observacion) -> int:
+def registrar(id_matricula: int, fecha, estado: str, estado_original, observacion) -> int:
     return insertar("""
-        INSERT INTO asistencia (id_matricula, fecha, estado, observacion)
-        VALUES (%s, %s, %s, %s)
-    """, (id_matricula, fecha, estado, observacion))
+        INSERT INTO asistencia (id_matricula, fecha, estado, estado_original, observacion)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (id_matricula, fecha, estado, estado_original, observacion))
 
 
 def de_seccion_y_fecha(id_seccion: int, fecha) -> list:
     """Asistencia de una sección en un día, con el nombre de cada alumno."""
-    return consultar_todos("""
-        SELECT al.id_alumno, al.apellidos, al.nombres, a.estado, a.observacion
+    return consultar_todos(f"""
+        SELECT al.id_alumno, al.apellidos, al.nombres, a.estado, {_ORIGINAL}, a.observacion
         FROM asistencia a
         JOIN matricula m ON m.id_matricula = a.id_matricula
         JOIN alumno al ON al.id_alumno = m.id_alumno
@@ -38,11 +44,11 @@ def de_seccion_y_fecha(id_seccion: int, fecha) -> list:
 
 def de_matricula(id_matricula: int) -> list:
     """Historial de asistencia de un alumno en el año, del día más reciente al más antiguo."""
-    return consultar_todos("""
-        SELECT fecha, estado, observacion
-        FROM asistencia
-        WHERE id_matricula = %s
-        ORDER BY fecha DESC
+    return consultar_todos(f"""
+        SELECT a.fecha, a.estado, {_ORIGINAL}, a.observacion
+        FROM asistencia a
+        WHERE a.id_matricula = %s
+        ORDER BY a.fecha DESC
     """, (id_matricula,))
 
 

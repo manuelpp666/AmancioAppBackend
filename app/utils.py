@@ -5,6 +5,7 @@ Cada validador recibe el dict `datos` (el JSON de la petición) y el nombre del
 campo. Si el valor no es válido, lanza ApiError(400) con un mensaje claro.
 """
 import datetime as dt
+import json
 import re
 from decimal import Decimal
 
@@ -53,6 +54,33 @@ def json_requerido() -> dict:
     if not isinstance(datos, dict):
         raise ApiError(400, "Se esperaba un cuerpo JSON")
     return datos
+
+
+def datos_y_archivo(campo: str = "archivo"):
+    """Lee una petición que PUEDE traer un archivo. Devuelve (datos, archivo o None).
+
+    - JSON normal (Content-Type: application/json)       → (el JSON, None)
+    - multipart/form-data (lo que envía la app con un archivo):
+          campo "datos"  → el mismo JSON de siempre, como texto (así se validan igual)
+          campo "archivo" → el archivo
+      Si no viene "datos", se usan los campos de texto sueltos del formulario
+      (cómodo para probar en Postman: archivo_url, comentario...).
+    """
+    if request.mimetype != "multipart/form-data":
+        return json_requerido(), None
+    if "datos" in request.form:
+        try:
+            datos = json.loads(request.form["datos"])
+        except ValueError:
+            raise ApiError(400, "El campo 'datos' debe ser un JSON válido")
+        if not isinstance(datos, dict):
+            raise ApiError(400, "El campo 'datos' debe ser un objeto JSON")
+    else:
+        datos = request.form.to_dict()
+    archivo = request.files.get(campo)
+    if archivo is not None and not archivo.filename:
+        archivo = None              # el formulario mandó el campo vacío
+    return datos, archivo
 
 
 # --- Validadores --------------------------------------------------------------

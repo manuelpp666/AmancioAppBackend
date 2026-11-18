@@ -7,11 +7,13 @@
 
 Para EMPEZAR una conversación el otro debe ser tu contacto (si no, 403). Una vez
 creada, cualquiera de los dos puede responder. Nadie más puede leerla (403).
-Cada mensaje nuevo crea una notificación para el otro usuario.
+Cada mensaje nuevo crea una notificación para el otro usuario y se envía al instante
+por WebSocket (ver app/tiempo_real.py).
 """
+from app import tiempo_real
 from app.database import get_db
 from app.errors import ApiError
-from app.repositories import mensaje_repository, perfil_repository
+from app.repositories import mensaje_repository, notificacion_repository, perfil_repository
 from app.services import academico_service, cursos_service, notificacion_service
 from app.utils import entero, texto
 
@@ -47,6 +49,14 @@ def _guardar_mensaje(usuario: dict, id_conversacion: int, id_destino: int, conte
     remitente = mensaje_repository.usuario_con_nombre(usuario["id"])
     notificacion_service.notificar([id_destino], "MENSAJE", f"Mensaje de {remitente['nombre']}",
                                    contenido[:_VISTA_PREVIA], id_conversacion)
+
+    # Tiempo real (WebSocket): el mensaje aparece al instante en el chat del otro y
+    # en los demás dispositivos del que lo envió. Se envía después del commit.
+    mensaje = mensaje_repository.buscar_mensaje(id_mensaje)
+    tiempo_real.anotar([id_destino], "mensaje",
+                       {"id_conversacion": id_conversacion, "mensaje": {**mensaje, "mio": False}})
+    tiempo_real.anotar([usuario["id"]], "mensaje",
+                       {"id_conversacion": id_conversacion, "mensaje": {**mensaje, "mio": True}})
     return id_mensaje
 
 
@@ -107,17 +117,22 @@ def iniciar(usuario: dict, datos: dict) -> tuple[dict, int]:
             "id_mensaje": id_mensaje}, codigo
 
 
-def ver(usuario: dict, id_conversacion: int) -> dict:
-    """Los mensajes de una conversación (solo para sus dos participantes)."""
+def ver(usuario: dict, id_conversacion: int, desde: int | None = None) -> dict:
+    """Los mensajes de una conversación (solo para sus dos participantes).
+
+    Con `desde` (id de un mensaje) devuelve solo los posteriores: así la app, con el
+    chat abierto, pide cada pocos segundos únicamente lo nuevo.
+    `leidos_hasta`: id del último mensaje MÍO que el otro ya leyó (para el "leído")."""
     conversacion = _conversacion_mia(usuario, id_conversacion)
     contacto = mensaje_repository.usuario_con_nombre(_otro(conversacion, usuario["id"]))
-    mensajes = mensaje_repository.mensajes_de(id_conversacion)
+    mensajes = mensaje_repository.mensajes_de(id_conversacion, desde)
     for m in mensajes:
         m["mio"] = m["remitente_id"] == usuario["id"]      # para dibujar la burbuja a la derecha
     return {"id_conversacion": id_conversacion,
             "contacto": {"id_usuario": contacto["id_usuario"], "nombre": contacto["nombre"],
                          "rol": contacto["rol"]},
-            "mensajes": mensajes}
+            "mensajes": mensajes,
+            "leidos_hasta": mensaje_repository.ultimo_leido(id_conversacion, usuario["id"])}
 
 
 def enviar(usuario: dict, id_conversacion: int, datos: dict) -> dict:
@@ -137,11 +152,20 @@ def enviar(usuario: dict, id_conversacion: int, datos: dict) -> dict:
 
 
 def marcar_leidos(usuario: dict, id_conversacion: int) -> dict:
-    _conversacion_mia(usuario, id_conversacion)
+    conversacion = _conversacion_mia(usuario, id_conversacion)
+    otro = _otro(conversacion, usuario["id"])
 
     db = get_db()
     try:
         marcados = mensaje_repository.marcar_leidos(id_conversacion, usuario["id"])
+        # Los avisos "Mensaje de ..." de esta conversación también quedan leídos.
+        notificacion_repository.marcar_leidas_de(usuario["id"], "MENSAJE", id_conversacion)
+        if marcados:
+            # Tiempo real: al otro se le marca "leído" en sus mensajes al instante.
+            tiempo_real.anotar([otro], "leido", {
+                "id_conversacion": id_conversacion,
+                "leidos_hasta": mensaje_repository.ultimo_leido(id_conversacion, otro),
+            })
         db.commit()
     except Exception:
         db.rollback()
