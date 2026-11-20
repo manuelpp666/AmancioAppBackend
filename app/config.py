@@ -28,7 +28,9 @@ DB_NAME = os.getenv("DB_NAME")
 # --- JWT (token de sesión) ---------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY")    # clave con la que se firman los tokens
 JWT_ALGORITHM = os.getenv("ALGORITHM") or "HS256"
-JWT_EXPIRE_MINUTES = _entero("ACCESS_TOKEN_EXPIRE_MINUTES", 60)  # duración del token
+# Duración del token (la sesión). No hay renovación automática: al vencer, la app vuelve
+# al inicio de sesión. 480 min = 8 horas, una jornada (antes 60: cortaba demos largas).
+JWT_EXPIRE_MINUTES = _entero("ACCESS_TOKEN_EXPIRE_MINUTES", 480)
 
 # --- Otros --------------------------------------------------------------------
 # En producción se apaga el modo debug del servidor.

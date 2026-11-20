@@ -26,7 +26,7 @@ from app.errors import ApiError
 
 def crear_token(usuario: dict) -> str:
     """Crea el token JWT de un usuario (la fila de la tabla `usuario`).
-    Dura JWT_EXPIRE_MINUTES (60 min por defecto)."""
+    Dura JWT_EXPIRE_MINUTES (8 horas por defecto; ver app/config.py)."""
     ahora = datetime.now(timezone.utc)
     contenido = {
         "sub": usuario["username"],   # a quién pertenece el token

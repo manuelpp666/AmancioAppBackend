@@ -7,6 +7,7 @@ dirección y los datos médicos, y cambiar la contraseña.
   (cada alumno tiene uno solo, en `alumno.id_familiar`).
 """
 import json
+import re
 
 from app.auth import exigir_dueno_o_roles
 from app.database import get_db
@@ -15,6 +16,9 @@ from app.repositories import perfil_repository, usuario_repository
 from app.services import academico_service
 from app.security import get_password_hash, verify_password
 from app.utils import EMAIL_RE, extraer_dni, texto
+
+# Teléfono de contacto: 9 dígitos (celular en Perú). La app valida lo mismo.
+TELEFONO_RE = re.compile(r"^[0-9]{9}$")
 
 
 # --- Ayudas -------------------------------------------------------------------
@@ -111,6 +115,8 @@ def actualizar_contacto(usuario: dict, username: str, datos: dict) -> dict:
     # Los dos campos son opcionales: se cambia solo lo que se envíe.
     telefono = texto(datos, "telefono", minimo=0, maximo=9, requerido=False)
     email = texto(datos, "email", minimo=0, maximo=100, requerido=False)
+    if telefono and not TELEFONO_RE.match(telefono):
+        raise ApiError(400, "El teléfono debe tener 9 dígitos (solo números)")
     if email and not EMAIL_RE.match(email):
         raise ApiError(400, "El correo no tiene un formato válido")
 

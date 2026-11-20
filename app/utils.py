@@ -149,9 +149,15 @@ def fecha_hora(datos: dict, campo: str) -> dt.datetime:
     """Lee una fecha con hora "AAAA-MM-DDTHH:MM" (obligatoria) y la devuelve como datetime."""
     valor = texto(datos, campo, minimo=1, maximo=30)
     try:
-        return dt.datetime.fromisoformat(valor)
+        resultado = dt.datetime.fromisoformat(valor)
     except ValueError:
         raise ApiError(400, f"El campo '{campo}' debe tener el formato AAAA-MM-DDTHH:MM")
+    # Si llega con zona horaria ("...Z" o "...-05:00"), se pasa a la hora local del
+    # servidor y se le quita la zona. Si no, compararla con datetime.now() (que no
+    # tiene zona) daba un error 500.
+    if resultado.tzinfo is not None:
+        resultado = resultado.astimezone().replace(tzinfo=None)
+    return resultado
 
 
 def enlace(datos: dict, campo: str, *, requerido: bool = False, maximo: int = 500):

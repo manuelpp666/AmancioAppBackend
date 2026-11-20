@@ -427,7 +427,7 @@ y comprueba que no se duplica).
 - **SQL directo con PyMySQL** (sin ORM): cada consulta se ve y se puede modificar en el
   repository. La estructura está en `database/schema.sql`.
 - **PyJWT + decorador propio** `@jwt_required("ROL")`: el token lleva `sub`, `id`, `rol`,
-  `iat` y `exp` (60 min).
+  `iat` y `exp` (8 horas por defecto; se cambia con `ACCESS_TOKEN_EXPIRE_MINUTES`).
 - **Un familiar por alumno** (`alumno.id_familiar`): el correo y el teléfono del alumno
   son los de su familiar; un familiar puede tener varios hijos.
 - Versión simplificada respecto al campus web: sin tutoría, exoneraciones, bloqueo por
